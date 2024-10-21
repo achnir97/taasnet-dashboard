@@ -1,0 +1,201 @@
+/* General Section Styling */
+.section {
+  padding: 30px;
+  margin: 20px 0;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Left Column for Profile */
+.left-column {
+  flex: 2;
+}
+
+/* Profile Info Section */
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.profile-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #fbc531;
+}
+
+.profile-info h3 {
+  font-size: 24px;
+  color: #2b2d42;
+}
+
+.profile-info p {
+  font-size: 16px;
+  color: #555;
+}
+
+/* About and Expertise */
+.profile-description, .expertise-level, .specific-skills {
+  margin-bottom: 20px;
+}
+
+.profile-description h4, 
+.expertise-level h4, 
+.specific-skills h4 {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.profile-description p,
+.specific-skills p {
+  font-size: 16px;
+  color: #555;
+  line-height: 1.6;
+}
+
+/* Portfolio Section */
+.portfolio-thumbnails {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.portfolio-thumbnails img {
+  width: 100px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.portfolio-thumbnails img:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Reviews & Ratings Section */
+.reviews-rating h4 {
+  font-size: 18px;
+  color: #2b2d42;
+  margin-bottom: 15px;
+}
+
+.reviews-rating p {
+  font-size: 16px;
+  color: #f39c12;
+  font-weight: bold;
+}
+
+.review-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f7f7f7;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.review-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.client-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.review-content {
+  font-size: 16px;
+  color: #555;
+}
+
+.review-content p {
+  margin: 0;
+}
+
+.review-rating {
+  color: #f39c12;
+  font-weight: bold;
+}
+
+/* Right Column for Pricing */
+.right-column {
+  flex: 1;
+  background-color: #f9f9fc;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.right-column h4 {
+  font-size: 22px;
+  color: #2b2d42;
+  margin-bottom: 20px;
+}
+
+.pricing-option {
+  padding: 15px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 15px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pricing-option:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.pricing-option h5 {
+  font-size: 18px;
+  color: #2b2d42;
+  margin-bottom: 10px;
+}
+
+.pricing-option p {
+  font-size: 16px;
+  color: #555;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .section {
+    flex-direction: column;
+  }
+
+  .profile-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .right-column {
+    margin-top: 20px;
+  }
+
+  .portfolio-thumbnails {
+    justify-content: center;
+  }
+
+  .pricing-option h5 {
+    font-size: 16px;
+  }
+
+  .pricing-option p {
+    font-size: 14px;
+  }
+}

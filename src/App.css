@@ -1,38 +1,97 @@
-.App {
-  text-align: center;
+/* General Styling */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+body {
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #f7f7f7, #e0e0e0);
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  margin: 0;
+  padding: 20px;
+  color: #4a4a4a;
+  line-height: 1.6;
 }
 
-.App-link {
-  color: #61dafb;
+h1, h2, h3, h4 {
+  color: #333333;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+p, li {
+  color: #4a4a4a;
+}
+
+button {
+  background-color: #f0f0f0;
+  color: #333333;
+  border-radius: 5px;
+  padding: 10px 20px;
+  border: 1px solid #cccccc;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #cccccc;
+  color: #333333;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: 1fr;
+  grid-template-areas: 
+    "header"
+    "sidebar"
+    "main-content"
+    "footer";
+  max-width: 1200px;
+  gap: 20px;
+  padding: 20px;
+}
+
+
+/* Adjust layout for wider screens */
+@media (min-width: 1024px) {
+  .grid-container {
+    max-width: 100%; /* Increase the content width to avoid too much centering */
   }
-  to {
-    transform: rotate(360deg);
+}
+
+@media (min-width: 1440px) {
+  .grid-container {
+    max-width:100%; /* Slightly wider layout for larger screens */
+  }
+}
+
+.header {
+  grid-area: header;
+}
+
+.sidebar {
+  grid-area: sidebar;
+}
+
+.main-content {
+  grid-area: main-content;
+}
+
+.footer {
+  grid-area: footer;
+}
+
+/* Responsive Design for smaller devices */
+@media (max-width: 768px) {
+  .grid-container {
+    grid-template-columns: 1fr;
+    padding: 10px;
+  }
+
+  /* Adjust padding for smaller devices */
+  .grid-container > * {
+    padding: 10px;
   }
 }
