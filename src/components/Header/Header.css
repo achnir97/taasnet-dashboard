@@ -34,7 +34,6 @@
 .search-bar-container {
   display: flex;
   align-items: center;
-  background-color: #f1f2f6;
   border-radius: 50px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   width: 70%;
@@ -79,7 +78,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid #fbc531;
+ 
 }
 
 /* Dropdown Menu */
@@ -202,6 +201,153 @@
   width: 100%;
   padding: 10px 20px;
   margin-top: 10px;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #ffffff;
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  z-index: 1;
+  border-radius: 8px;
+  width: 200px;
+  transition: opacity 0.3s ease;
+}
+
+.dropdown-content.show {
+  display: block;
+  opacity: 1;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f1f1f1;
+  transform: translateY(-2px); /* Slight lift on hover */
+}
+
+.status-icon {
+  margin-right: 10px;
+}
+
+.status-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333; 
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background-color: #f8f9fa;
+}
+
+.header-left h1 {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+.profile-image-container {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: 15px;
+  background-color: #ccc; /* Default background color */
+}
+.profile-image {
+  width: 90%;
+  height: 90%;
+  border-radius: 50%;
+}
+.profile-image-container.online {
+  background-color: green;
+}
+
+.profile-image-container.busy {
+  background-color: red;
+}
+
+.profile-image-container.offline {
+  background-color: gray;
+}
+
+.profile-image-container.inameeting {
+  background-color: orange;
+}
+.settings-icon {
+  cursor: pointer;
+  font-size: 20px;
+  margin-left: 15px;
+}
+
+.hamburger {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hamburger {
+    display: block;
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .header-right {
+    display: none;
+  }
+
+  .mobile-sidebar {
+    width: 100%;
+    background-color: white;
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    padding: 20px;
+    
+    z-index: 10;
+  }
+
+  .mobile-sidebar-close {
+    font-size: 24px;
+    cursor: pointer;
+  }
+
+  .mobile-menu {
+    list-style: none;
+    padding: 0;
+  }
+
+  .mobile-menu li {
+    padding: 10px 0;
+   
+  }
 }
 
 /* Responsive Design */

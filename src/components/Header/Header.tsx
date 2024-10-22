@@ -1,13 +1,17 @@
+// src/Header.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import './Header.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBell, faHeart, faEnvelope, faSearch, faCog, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faBell, faHeart, faEnvelope, faSearch, faCog, faBars, faTimes, faCircle } from '@fortawesome/free-solid-svg-icons';
 import profileImage from '../assets/Profile_jhon.png';
+import { db } from '../../firebase'; // Firebase import
+import { doc, setDoc } from 'firebase/firestore'; // Firestore functions
 
 const Header: React.FC = () => {
   const [hamburgerOpen, setHamburgerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('Online'); // Default status
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Toggle hamburger menu
@@ -45,6 +49,24 @@ const Header: React.FC = () => {
     };
   }, []);
 
+  // Function to update status in Firestore
+  const updateStatus = async (status: string) => {
+    try {
+      const statusRef = doc(db, 'talents', 'talentId'); // Replace 'talentId' with actual talent ID logic
+      await setDoc(statusRef, { status }, { merge: true });
+      setSelectedStatus(status); // Update the selected status locally
+      console.log(`Status updated to ${status}`);
+    } catch (error) {
+      console.error('Error updating status: ', error);
+    }
+  };
+
+  // Handle status change
+  const handleStatusChange = (status: string) => {
+    updateStatus(status);
+    setDropdownVisible(false); // Close dropdown after selection
+  };
+
   return (
     <header className="header">
       <div className="header-left">
@@ -67,17 +89,31 @@ const Header: React.FC = () => {
         <FontAwesomeIcon icon={faHeart} className="header-icon" />
         <FontAwesomeIcon icon={faEnvelope} className="header-icon" />
         <span className="orders-text">Orders</span>
-        <img src={profileImage} alt="Profile" className="profile-image" />
+        
+        {/* Profile Image with dynamic background color */}
+        <div className={`profile-image-container ${selectedStatus.toLowerCase()}`}>
+          <img src={profileImage} alt="Profile" className="profile-image" />
+        </div>
 
         <div className="dropdown" ref={dropdownRef}>
           <FontAwesomeIcon icon={faCog} className="settings-icon" onClick={toggleDropdown} />
           <div id="dropdown-menu" className={`dropdown-content ${dropdownVisible ? 'show' : ''}`}>
-            <a href="#">Profile Management</a>
-            <a href="#">TaasCard Management</a>
-            <a href="#">Schedule Management</a>
-            <a href="#">Chip Management</a>
-            <a href="#">Reviews & Ratings</a>
-            <a href="#">Service Platform</a>
+            <div className="dropdown-item" onClick={() => handleStatusChange('Online')}>
+              <FontAwesomeIcon icon={faCircle} style={{ color: 'green' }} className="status-icon" />
+              <span className="status-text">Online</span>
+            </div>
+            <div className="dropdown-item" onClick={() => handleStatusChange('Busy')}>
+              <FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} className="status-icon" />
+              <span className="status-text">Busy</span>
+            </div>
+            <div className="dropdown-item" onClick={() => handleStatusChange('Offline')}>
+              <FontAwesomeIcon icon={faCircle} style={{ color: 'gray' }} className="status-icon" />
+              <span className="status-text">Offline</span>
+            </div>
+            <div className="dropdown-item" onClick={() => handleStatusChange('In a Meeting')}>
+              <FontAwesomeIcon icon={faCircle} style={{ color: 'orange' }} className="status-icon" />
+              <span className="status-text">In a Meeting</span>
+            </div>
           </div>
         </div>
       </div>
@@ -115,12 +151,22 @@ const Header: React.FC = () => {
               </a>
               {settingsOpen && (
                 <ul className="settings-dropdown show">
-                  <li><a href="#">Profile Management</a></li>
-                  <li><a href="#">TaasCard Management</a></li>
-                  <li><a href="#">Schedule Management</a></li>
-                  <li><a href="#">Chip Management</a></li>
-                  <li><a href="#">Reviews & Ratings</a></li>
-                  <li><a href="#">Service Platform</a></li>
+                  <li className="dropdown-item" onClick={() => handleStatusChange('Online')}>
+                    <FontAwesomeIcon icon={faCircle} style={{ color: 'green' }} className="status-icon" />
+                    <span className="status-text">Online</span>
+                  </li>
+                  <li className="dropdown-item" onClick={() => handleStatusChange('Busy')}>
+                    <FontAwesomeIcon icon={faCircle} style={{ color: 'red' }} className="status-icon" />
+                    <span className="status-text">Busy</span>
+                  </li>
+                  <li className="dropdown-item" onClick={() => handleStatusChange('Offline')}>
+                    <FontAwesomeIcon icon={faCircle} style={{ color: 'gray' }} className="status-icon" />
+                    <span className="status-text">Offline</span>
+                  </li>
+                  <li className="dropdown-item" onClick={() => handleStatusChange('In a Meeting')}>
+                    <FontAwesomeIcon icon={faCircle} style={{ color: 'orange' }} className="status-icon" />
+                    <span className="status-text">In a Meeting</span>
+                  </li>
                 </ul>
               )}
             </li>

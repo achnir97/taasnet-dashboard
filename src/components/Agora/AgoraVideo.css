@@ -1,0 +1,90 @@
+/* AgoraVideo.css */
+
+/* Container for the entire streaming section */
+.agora-video-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f4f4f9;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  /* Header */
+  .agora-video-container h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  /* Button group styling */
+  .button-group {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  
+  /* Common button styles */
+  .button-group button {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    padding: 12px 25px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  /* Hover effect for buttons */
+  .button-group button:hover {
+    background-color: #45a049;
+  }
+  
+  /* When a button is clicked (active state) */
+  .button-group button:active {
+    transform: scale(0.95);
+  }
+  
+  /* Styling the video container */
+  .video-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000;
+    width: 80%;
+    height: 60vh;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+  }
+  
+  /* Message to be shown before video is loaded or if no stream is available */
+  .video-container:empty::before {
+    content: "Loading video...";
+    color: #fff;
+    font-size: 1.5rem;
+    position: absolute;
+  }
+  
+  /* Optional: Make the container responsive */
+  @media (max-width: 768px) {
+    .agora-video-container h1 {
+      font-size: 2rem;
+    }
+  
+    .button-group button {
+      padding: 10px 20px;
+      font-size: 0.9rem;
+    }
+  
+    .video-container {
+      width: 95%;
+      height: 40vh;
+    }
+  }
+  
