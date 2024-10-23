@@ -1,10 +1,8 @@
 /* General Sidebar Styling */
-.sidebar {
-    grid-area: sidebar;
+.sidebar {  
     padding: 15px 20px;
     transition: transform 0.3s ease;
   }
-  
   /* Sidebar Menu for Desktop */
   .sidebar ul {
     list-style: none;

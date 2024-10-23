@@ -1,6 +1,6 @@
-// AgoraService.ts
 import AgoraRTC, { IAgoraRTCClient, IRemoteVideoTrack, IRemoteAudioTrack, ILocalVideoTrack, ILocalAudioTrack } from "agora-rtc-sdk-ng";
-import { agoraConfig } from "./AgoraConfig"
+import { agoraConfig } from "./AgoraConfig";
+
 export interface IAgoraService {
   client: IAgoraRTCClient | null;
   localAudioTrack: ILocalAudioTrack | null;
@@ -13,9 +13,10 @@ export const agoraService: IAgoraService = {
   localVideoTrack: null,
 };
 
-export const initAgora = async (): Promise<void> => {
+// Initialize Agora with the video container ID where the video will be appended
+export const initAgora = async (localContainerId: string, remoteContainerId: string): Promise<void> => {
   // Initialize the AgoraRTC client
-  agoraService.client = AgoraRTC.createClient({ mode: "live", codec: "vp8", role: "host" });
+  agoraService.client = AgoraRTC.createClient({ mode: "live", codec: "vp8" });
 
   // Event handler when a remote user publishes their stream
   agoraService.client.on("user-published", async (user, mediaType) => {
@@ -24,12 +25,12 @@ export const initAgora = async (): Promise<void> => {
 
     if (mediaType === "video") {
       const remoteVideoTrack: IRemoteVideoTrack = user.videoTrack!;
-      const remotePlayerContainer = document.createElement("div");
-      remotePlayerContainer.id = user.uid.toString();
-      remotePlayerContainer.style.width = "640px";
-      remotePlayerContainer.style.height = "480px";
-      document.body.append(remotePlayerContainer);
-      remoteVideoTrack.play(remotePlayerContainer);
+      const remoteContainer = document.getElementById(remoteContainerId);
+      if (remoteContainer) {
+        remoteVideoTrack.play(remoteContainer);
+      } else {
+        console.error(`Remote video container with id '${remoteContainerId}' not found.`);
+      }
     }
 
     if (mediaType === "audio") {
@@ -37,40 +38,56 @@ export const initAgora = async (): Promise<void> => {
       remoteAudioTrack.play();
     }
 
-    agoraService.client?.on("user-unpublished", user => {
-      const remotePlayerContainer = document.getElementById(user.uid.toString());
-      remotePlayerContainer?.remove();
+    agoraService.client?.on("user-unpublished", (user) => {
+      const remoteContainer = document.getElementById(remoteContainerId);
+      if (remoteContainer) {
+        remoteContainer.innerHTML = ''; // Clear the container when the user unpublishes their stream
+      }
     });
   });
 };
 
-export const joinChannel = async () => {
+// Function to join the channel based on role (host or audience)
+export const joinChannel = async (isHost: boolean, localContainerId: string) => {
+  // Set the role based on whether the user is a host or audience
+  const role = isHost ? "host" : "audience";
+  
+  // Set client role
+  await agoraService.client?.setClientRole(role);
+
+  // Join the channel
   await agoraService.client?.join(agoraConfig.appId, agoraConfig.channel, agoraConfig.token, agoraConfig.uid);
-  agoraService.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-  agoraService.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+  
+  if (isHost) {
+    // Only hosts are allowed to publish streams
+    agoraService.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+    agoraService.localVideoTrack = await AgoraRTC.createCameraVideoTrack();
 
-  const localPlayerContainer = document.createElement("div");
-  localPlayerContainer.id = agoraConfig.uid.toString();
-  localPlayerContainer.style.width = "640px";
-  localPlayerContainer.style.height = "480px";
-  document.body.append(localPlayerContainer);
+    const localContainer = document.getElementById(localContainerId);
+    if (localContainer) {
+      agoraService.localVideoTrack.play(localContainer);
+    } else {
+      console.error(`Local video container with id '${localContainerId}' not found.`);
+    }
 
-  agoraService.localVideoTrack.play(localPlayerContainer);
-  await agoraService.client?.publish([agoraService.localAudioTrack, agoraService.localVideoTrack]);
-
-  console.log("Join and publish success!");
+    await agoraService.client?.publish([agoraService.localAudioTrack, agoraService.localVideoTrack]);
+    console.log("Join and publish success!");
+  } else {
+    console.log("Joined as audience (view-only mode).");
+  }
 };
 
+// Function to leave the channel
 export const leaveChannel = async () => {
   agoraService.localAudioTrack?.close();
   agoraService.localVideoTrack?.close();
 
-  const localPlayerContainer = document.getElementById(agoraConfig.uid.toString());
-  localPlayerContainer?.remove();
+  const localContainer = document.getElementById(agoraConfig.uid.toString());
+  localContainer?.remove();
 
   agoraService.client?.remoteUsers.forEach(user => {
-    const playerContainer = document.getElementById(user.uid.toString());
-    playerContainer?.remove();
+    const remoteContainer = document.getElementById(user.uid.toString());
+    remoteContainer?.remove();
   });
 
   await agoraService.client?.leave();
