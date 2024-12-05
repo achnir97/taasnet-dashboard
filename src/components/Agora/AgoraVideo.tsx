@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Mic, MicOff, Videocam, VideocamOff, CallEnd } from '@mui/icons-material';
+import { Mic, MicOff, Videocam, VideocamOff, CallEnd, Groups, Person } from '@mui/icons-material';
 import { initAgora, joinChannel, leaveChannel, agoraService } from "./Boardcast";
 import "./AgoraVideo.css";
-
 
 const AgoraVideo: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
@@ -95,30 +94,29 @@ const AgoraVideo: React.FC = () => {
 
       {!isStreaming && (
         <div className="button-group">
-          <button onClick={handleJoinAsHost} disabled={loading}>
-            {loading ? "Joining as Host..." : "Join as Host"}
+          <button className="icon-button" onClick={handleJoinAsHost} disabled={loading} title="Join as Host">
+            <Person fontSize="large" />
           </button>
-          <button onClick={handleJoinAsAudience} disabled={loading}>
-            {loading ? "Joining as Audience..." : "Join as Audience"}
+          <button className="icon-button" onClick={handleJoinAsAudience} disabled={loading} title="Join as Audience">
+            <Groups fontSize="large" />
           </button>
         </div>
       )}
 
       {isStreaming && (
-       
-<div className="control-bar">
-  <button className="control-button" onClick={toggleMute}>
-    {isMuted ? <MicOff /> : <Mic />}
-  </button>
+        <div className="control-bar">
+          <button className="control-button" onClick={toggleMute}>
+            {isMuted ? <MicOff /> : <Mic />}
+          </button>
 
-  <button className="control-button" onClick={toggleVideo}>
-    {isVideoOff ? <VideocamOff /> : <Videocam />}
-  </button>
+          <button className="control-button" onClick={toggleVideo}>
+            {isVideoOff ? <VideocamOff /> : <Videocam />}
+          </button>
 
-  <button className="control-button leave" onClick={handleLeave}>
-    <CallEnd />
-  </button>
-</div>
+          <button className="control-button leave" onClick={handleLeave}>
+            <CallEnd />
+          </button>
+        </div>
       )}
     </div>
   );

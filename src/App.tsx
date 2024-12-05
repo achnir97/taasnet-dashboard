@@ -8,6 +8,7 @@ import { ProfileManagement } from './components/Profile/ProfileManagement';
 import Footer from './components/Footer/Footer';
 import firebaseApp from './firebase'; 
 import AgoraVideo from './components/Agora/AgoraVideo';
+import YoutubeAdmin from './components/Youtube/Youtube';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -26,6 +27,7 @@ const App: React.FC = () => {
           <Route path="/" element={<ProfileManagement />} />
             <Route path="/Profile-management" element={<ProfileManagement />} />
             <Route path="/broadcast" element={<AgoraVideo />} />
+            <Route path="/service-platform" element={<YoutubeAdmin />} />
           </Routes>
         </div>
 
