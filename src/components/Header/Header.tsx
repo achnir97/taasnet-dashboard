@@ -4,7 +4,7 @@ import './Header.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBell, faHeart, faEnvelope, faSearch, faCog, faBars, faTimes, faCircle } from '@fortawesome/free-solid-svg-icons';
 import profileImage from '../assets/Profile_jhon.png';
-import { db } from '../../firebase'; // Firebase import
+import { db } from '../Firebase/firebase'; // Firebase import
 import { doc, setDoc } from 'firebase/firestore'; // Firestore functions
 
 const Header: React.FC = () => {

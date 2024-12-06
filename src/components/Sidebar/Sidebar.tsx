@@ -12,7 +12,7 @@ const Sidebar: React.FC = () => {
         <li><Link to="/taascard-management">TaasCard Management</Link></li>
         <li><Link to="/schedule-management">Schedule Management</Link></li>
         <li><Link to="/chip-management">Chip Management</Link></li>
-        <li><Link to="/reviews-ratings">Reviews & Ratings</Link></li>
+        <li><Link to="/admin">Admin</Link></li>
         <li><Link to="/service-platform">Service Platform</Link></li>
         <li><Link to="/broadcast">LiveStream Broadcast</Link></li>
       </ul>
