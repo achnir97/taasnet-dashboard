@@ -1,11 +1,15 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // React Router for navigation
+import { useNavigate } from "react-router-dom";
 import { auth } from "./../Firebase/firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
+import { useGlobalContext } from "../context/GlobalContext"; // Import Global Context
+import { getFirestore, doc, setDoc } from "firebase/firestore"; // Firestore imports
 import "./AuthPage.css";
+
+const db = getFirestore(); // Initialize Firestore
 
 const AuthPage: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState<boolean>(true); // Toggle between Sign-Up and Login
@@ -14,19 +18,45 @@ const AuthPage: React.FC = () => {
   const [message, setMessage] = useState<string>("");
   const [skipLogin, setSkipLogin] = useState<boolean>(false); // Toggle skip state
   const navigate = useNavigate(); // Navigation hook
+  const { setUserId } = useGlobalContext(); // Get the setUserId function from GlobalContext
+
+  // Function to save user email in Firestore
+  const saveUserToFirestore = async (uid: string, email: string) => {
+    try {
+      const userRef = doc(db, "users", uid);
+      await setDoc(userRef, {
+        email,
+        createdAt: new Date(),
+      });
+      console.log("User data saved to Firestore:", { uid, email });
+    } catch (error) {
+      console.error("Error saving user data to Firestore:", error);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
-
     try {
       if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
+        // Sign up new user
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Save user email to Firestore
+        await saveUserToFirestore(user.uid, user.email || "");
         setMessage("Sign-up successful! You can now log in.");
         setIsSignUp(false);
+        setUserId(user.uid); // Set userId in global context
+        console.log("Signed up user ID:", user.uid);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        // Login existing user
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
         setMessage("Login successful!");
+        setUserId(user.uid); // Set userId in global context
+        console.log("Logged in user ID:", user.uid);
         navigate("/home"); // Navigate to homepage on successful login
       }
     } catch (error: any) {

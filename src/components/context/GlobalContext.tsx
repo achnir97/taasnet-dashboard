@@ -1,27 +1,27 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode } from "react";
 
-// Define the shape of the global context
-interface GlobalContextProps {
-  userID: string | null;
-  setUserID: (id: string | null) => void;
+// Define context type
+interface GlobalContextType {
+  userId: string | null;
+  setUserId: (id: string | null) => void;
 }
 
-// Create the context
-const GlobalContext = createContext<GlobalContextProps | undefined>(undefined);
+// Create context
+const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
 
-// Provider Component
+// Provider component
 export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [userID, setUserID] = useState<string | null>(null); // Global userID state
+  const [userId, setUserId] = useState<string | null>(null);
 
   return (
-    <GlobalContext.Provider value={{ userID, setUserID }}>
+    <GlobalContext.Provider value={{ userId, setUserId }}>
       {children}
     </GlobalContext.Provider>
   );
 };
 
-// Custom hook for consuming the context
-export const useGlobalContext = (): GlobalContextProps => {
+// Custom hook to use the GlobalContext
+export const useGlobalContext = (): GlobalContextType => {
   const context = useContext(GlobalContext);
   if (!context) {
     throw new Error("useGlobalContext must be used within a GlobalProvider");
