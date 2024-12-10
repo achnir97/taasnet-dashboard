@@ -4,13 +4,12 @@ import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from "firebase/auth";
 export const firebaseConfig = {
-  apiKey: "AIzaSyAJ51K6iD0VRr2HPIanv4_fdKNTJ5XE4ZA",
-  authDomain: "taasnet-43e10.firebaseapp.com",
-  projectId: "taasnet-43e10",
-  storageBucket: "taasnet-43e10.appspot.com",
-  messagingSenderId: "594075098061",
-  appId: "1:594075098061:web:d03ff4118b4eeadc988284",
-  measurementId: "G-5NXHSJLV7S"
+  apiKey: "AIzaSyAXw5cBBgOmiSZfuJAEfe2D9nMLMGipy4Y",
+  authDomain: "taas-aea43.firebaseapp.com",
+  projectId: "taas-aea43",
+  storageBucket: "taas-aea43.firebasestorage.app",
+  messagingSenderId: "989753010579",
+  appId: "1:989753010579:web:48861123c2e3352f816066"
 };
 
 // Initialize Firebase

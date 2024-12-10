@@ -168,7 +168,7 @@ const AddEvent: React.FC = () => {
         {!isReviewing ? (
           <>
             <Typography variant="h4" fontWeight={700} textAlign="center" mb={2}>
-              Create New Event
+              Create New Card
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -199,7 +199,7 @@ const AddEvent: React.FC = () => {
               </Grid>
               <Grid item xs={6}>
                 <CustomSelect
-                  label="Event Type"
+                  label="Card Type"
                   value={eventType}
                   onChange={(e) => setEventType(e.target.value as string)}
                   options={eventTypes}
@@ -216,14 +216,14 @@ const AddEvent: React.FC = () => {
               </Grid>
               <Grid item xs={6}>
                 <DatePicker
-                  label="Event Date"
+                  label=" Date"
                   value={eventDate}
                   onChange={(newValue) => setEventDate(newValue)}
                 />
               </Grid>
               <Grid item xs={6}>
                 <TimePicker
-                  label="Event Time"
+                  label=" Time"
                   value={eventTime}
                   onChange={(newValue) => setEventTime(newValue)}
                 />
@@ -271,7 +271,7 @@ const AddEvent: React.FC = () => {
         ) : (
           <>
             <Typography variant="h5" textAlign="center" mb={2}>
-              Review Your Event Details
+              Review Your Card Details
             </Typography>
             <Divider sx={{ mb: 2 }} />
             <Box>
@@ -279,14 +279,14 @@ const AddEvent: React.FC = () => {
               <Typography>Title: {title}</Typography>
               <Typography>Description: {description}</Typography>
               <Typography>Category: {category}</Typography>
-              <Typography>Event Type: {eventType}</Typography>
+              <Typography>Card Type: {eventType}</Typography>
               <Typography>Price: ${price}</Typography>
               <Typography>Date: {eventDate?.toDateString()}</Typography>
               <Typography>Time: {eventTime?.toLocaleTimeString()}</Typography>
               <Typography>Video URL: {videoUrl}</Typography>
             </Box>
             <Button onClick={handleSubmit} variant="contained" fullWidth sx={{ mt: 3 }}>
-              Submit Event
+              Submit Card
             </Button>
             <Button onClick={handleEdit} sx={{ mt: 1 }}>
               Edit Details

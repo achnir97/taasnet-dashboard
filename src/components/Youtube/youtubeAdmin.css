@@ -1,235 +1,94 @@
-/* Root Variables for Theming */
-:root {
-  --primary-color: #4caf50;
-  --secondary-color: #f44336;
-  --text-color: #333;
-  --background-color: #f9f9f9;
-  --border-color: #ddd;
-  --hover-opacity: 0.9;
-  --transition-speed: 0.3s;
-}
-
-/* Dark Mode Variables */
-body.dark-mode {
-  --primary-color: #66bb6a;
-  --secondary-color: #ef5350;
-  --text-color: #eee;
-  --background-color: #121212;
-  --border-color: #444;
-}
-
-/* Container */
-.admin-container {
+.youtube-admin-container {
   max-width: 800px;
-  margin: 0 auto;
+  margin: auto;
   padding: 20px;
-  font-family: "Roboto", sans-serif;
-  color: var(--text-color);
+  background: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  font-family: Arial, sans-serif;
+}
+
+.title {
   text-align: center;
-}
-
-/* Title */
-.admin-title {
-  font-size: 26px;
-  font-weight: bold;
-  margin-bottom: 20px;
-  color: #111;
-}
-
-/* Video Card */
-.admin-video-card {
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.3);
+  color: #333;
   margin-bottom: 20px;
 }
 
-/* Input Form */
-.admin-form-card {
-  background: var(--background-color);
-  border-radius: 8px;
+.card {
+  background: #fff;
   padding: 20px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  margin: 20px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.admin-form-label {
-  font-size: 14px;
+.input-form label {
+  display: block;
+  margin: 10px 0;
   font-weight: bold;
-  color: var(--text-color);
-  display: flex;
-  flex-direction: column;
+  color: #555;
 }
 
-.admin-form-input {
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+.input-form input {
+  width: 100%;
+  padding: 6px;
   margin-top: 5px;
-  transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
 
-.admin-form-input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 4px rgba(76, 175, 80, 0.3);
-  outline: none;
+.set-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
-/* Controls */
-.admin-controls {
+.set-btn:hover {
+  background-color: #0056b3;
+}
+
+.video-container {
+  margin: 20px 0;
+}
+
+.controls {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-top: 20px;
 }
 
-.admin-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  border-radius: 4px;
+.play-btn,
+.pause-btn {
+  padding: 8px 16px;
+  font-size: 14px;
   border: none;
+  border-radius: 6px;
   cursor: pointer;
-  transition: transform var(--transition-speed), background-color var(--transition-speed);
+  color: #fff;
 }
 
-.admin-button.play {
-  background-color: var(--primary-color);
-  color: white;
+.play-btn {
+  background-color: #28a745;
 }
 
-.admin-button.pause {
-  background-color: var(--secondary-color);
-  color: white;
+.pause-btn {
+  background-color: #dc3545;
 }
 
-.admin-button:hover {
-  transform: translateY(-2px);
-  opacity: var(--hover-opacity);
+.play-btn:hover {
+  background-color: #218838;
 }
 
-.admin-button:disabled {
-  background-color: #ccc;
-  color: #666;
-  cursor: not-allowed;
-  opacity: 0.7;
+.pause-btn:hover {
+  background-color: #c82333;
 }
 
-/* Status */
-.admin-status {
-  margin-top: 20px;
-  font-size: 18px;
-  color: #666;
-}
-
-.admin-error {
-  color: var(--secondary-color);
-  font-size: 14px;
-  font-weight: bold;
-  margin-top: 10px;
+.status-badge {
   text-align: center;
-}
-
-/* Badge */
-.badge {
-  margin-top: 10px;
-  padding: 5px 15px;
-  font-size: 14px;
+  margin-top: 15px;
   font-weight: bold;
-  border-radius: 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: transform var(--transition-speed);
+  color: #333;
 }
-
-.badge-play {
-  background-color: var(--primary-color);
-  color: white;
-}
-
-.badge-pause {
-  background-color: var(--secondary-color);
-  color: white;
-}
-
-.badge:hover {
-  transform: scale(1.05);
-}
-
-/* Progress Bar */
-.admin-progress {
-  height: 5px;
-  background: var(--border-color);
-  border-radius: 5px;
-  overflow: hidden;
-  margin: 10px 0;
-}
-
-.admin-progress-bar {
-  height: 100%;
-  background: var(--primary-color);
-  transition: width var(--transition-speed);
-}
-
-/* Playback Range Inputs */
-.admin-range-inputs {
-  margin-top: 20px;
-  display: flex;
-  justify-content: space-around;
-  gap: 20px;
-}
-
-.admin-range-inputs label {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 14px;
-  color: var(--text-color);
-}
-
-.admin-range-inputs input {
-  margin-top: 5px;
-  padding: 8px;
-  font-size: 14px;
-  width: 100px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .admin-container {
-    padding: 15px;
-  }
-
-  .admin-title {
-    font-size: 22px;
-    margin-bottom: 15px;
-  }
-
-  .admin-form-card {
-    padding: 15px;
-    gap: 10px;
-  }
-
-  .admin-range-inputs {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .admin-controls {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .admin-button {
-    width: 100%;
-  }
-}
-

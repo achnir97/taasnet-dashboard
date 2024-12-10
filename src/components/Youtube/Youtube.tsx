@@ -1,216 +1,168 @@
 import React, { useRef, useState, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
-import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import "./youtubeAdmin.css";
 
 const db = getFirestore();
 
-const YoutubeAdmin = () => {
-  const [videoId, setVideoId] = useState<string>("dQw4w9WgXcQ");
+const YoutubeAdmin: React.FC = () => {
+  const [videoId, setVideoId] = useState<string>("dQw4w9WgXcQ"); // Default video ID
   const [videoUrl, setVideoUrl] = useState<string>("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-  const [action, setAction] = useState<string>("pause");
-  const [startTime, setStartTime] = useState<number>(0); // in seconds
-  const [endTime, setEndTime] = useState<number>(0); // in seconds
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<number>(0); // Start in seconds
+  const [endTime, setEndTime] = useState<number>(0); // End in seconds
+  const [pausedTime, setPausedTime] = useState<number>(0); // Last paused time
+  const [currentAction, setCurrentAction] = useState<string>("pause"); // Default action
   const playerRef = useRef<any>(null);
 
   useEffect(() => {
     fetchCurrentSettings();
-    const interval = setInterval(() => {
-      if (playerRef.current) {
-        setCurrentTime(playerRef.current.getCurrentTime());
-        setDuration(playerRef.current.getDuration());
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
   }, []);
 
   // Fetch video settings from Firestore
   const fetchCurrentSettings = async () => {
-    setLoading(true);
-    setError(null);
     try {
       const docRef = doc(db, "adminControls", "videoControl");
       const docSnapshot = await getDoc(docRef);
       if (docSnapshot.exists()) {
         const data = docSnapshot.data();
         setVideoId(data.videoId || "dQw4w9WgXcQ");
-        setVideoUrl(`https://www.youtube.com/watch?v=${data.videoId}` || "");
-        setAction(data.action || "pause");
+        setVideoUrl(`https://www.youtube.com/watch?v=${data.videoId}`);
         setStartTime(data.startTime || 0);
         setEndTime(data.endTime || 0);
-      } else {
-        setError("No settings found. Please configure video settings.");
+        setPausedTime(data.lastPausedTime || 0);
+        setCurrentAction("pause");
       }
-    } catch (err) {
-      setError("Failed to fetch video settings. Please try again.");
-      console.error("Error fetching settings:", err);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching video settings:", error);
     }
   };
 
   // Update video settings in Firestore
-  const updateFirebase = async (state: Partial<{ 
-    action: string; 
-    videoId: string; 
-    startTime: number; 
-    endTime: number; 
-    currentTime?: number; 
-  }>) => {
+  const updateSettings = async (newSettings: Partial<{ videoId: string; startTime: number; endTime: number; lastPausedTime: number }>) => {
     try {
       const docRef = doc(db, "adminControls", "videoControl");
-      if (Object.keys(state).length > 0) {
-        await updateDoc(docRef, state);
-      }
-    } catch (err) {
-      console.error("Error updating Firebase:", err);
+      await setDoc(docRef, newSettings, { merge: true });
+    } catch (error) {
+      console.error("Error updating Firebase:", error);
     }
   };
 
-  // Extract videoId from YouTube URL
+  // Extract video ID from YouTube URL
   const extractVideoId = (url: string): string => {
-    const match = url.match(/(?:\?v=|\/embed\/|\/v\/|youtu\.be\/|\/watch\?v=|&v=)([^&?/\s]{11})/);
+    const match = url.match(/(?:\?v=|\/embed\/|youtu\.be\/|\/v\/|&v=)([^&?/\s]{11})/);
     return match ? match[1] : "";
   };
 
-  // Handle video URL change
-  const handleVideoUrlChange = (url: string) => {
-    const extractedVideoId = extractVideoId(url);
-    if (extractedVideoId) {
-      setVideoId(extractedVideoId);
-      setVideoUrl(url);
-      updateFirebase({ videoId: extractedVideoId });
+  // Handle Set Button Click
+  const handleSet = () => {
+    const extractedId = extractVideoId(videoUrl);
+    if (extractedId) {
+      setVideoId(extractedId);
+      updateSettings({ videoId: extractedId, startTime, endTime, lastPausedTime: startTime });
+      setCurrentAction("pause");
+      playerRef.current?.pauseVideo();
     } else {
-      setError("Invalid YouTube URL. Please try again.");
+      alert("Invalid YouTube URL. Please enter a valid URL.");
     }
   };
 
-  // Handle Play/Pause toggle
-  const handlePlayPause = () => {
+  // Play Video
+  const handlePlay = () => {
     if (playerRef.current) {
-      const currentTime = playerRef.current.getCurrentTime();
-      const newAction = action === "playRange" ? "pause" : "playRange";
-      setAction(newAction);
+      const resumeTime = pausedTime > 0 ? pausedTime : startTime;
+      playerRef.current.seekTo(resumeTime); // Start from paused time or start time
+      playerRef.current.playVideo();
+      setCurrentAction("play");
 
-      if (newAction === "playRange") {
-        playerRef.current.seekTo(startTime);
-        playerRef.current.playVideo();
-        if (endTime > startTime) {
-          setTimeout(() => {
-            if (playerRef.current && action === "playRange") {
-              playerRef.current.pauseVideo();
-              setAction("pause");
-              updateFirebase({ action: "pause" });
-            }
-          }, (endTime - startTime) * 1000);
+      // Monitor to pause at the end time
+      const monitorPlayback = setInterval(() => {
+        const currentTime = playerRef.current.getCurrentTime();
+        if (currentTime >= endTime && endTime > 0) {
+          playerRef.current.pauseVideo();
+          setPausedTime(endTime); // Update paused time as end time
+          setCurrentAction("pause");
+          updateSettings({ lastPausedTime: endTime });
+          clearInterval(monitorPlayback);
         }
-      } else {
-        playerRef.current.pauseVideo();
-      }
-
-      updateFirebase({ action: newAction, currentTime });
+      }, 500);
     }
   };
 
-  const opts = {
-    height: "390",
-    width: "640",
-    playerVars: {
-      autoplay: 0,
-    },
+  // Pause Video
+  const handlePause = () => {
+    if (playerRef.current) {
+      const currentPausedTime = playerRef.current.getCurrentTime();
+      setPausedTime(currentPausedTime); // Save paused position
+      playerRef.current.pauseVideo();
+      setCurrentAction("pause");
+      updateSettings({ lastPausedTime: currentPausedTime });
+    }
   };
 
   return (
-    <div className="admin-container">
-      <h1 className="admin-title">Admin YouTube Control</h1>
-
-      {loading ? (
-        <div className="admin-status">Loading video settings...</div>
-      ) : error ? (
-        <div className="admin-status admin-error">{error}</div>
-      ) : (
-        <>
-          {/* Input Form */}
-          <div className="admin-form-card">
-            <label className="admin-form-label">
-              Video URL:
-              <input
-                type="text"
-                value={videoUrl}
-                placeholder="Paste YouTube URL here"
-                className="admin-form-input"
-                onChange={(e) => handleVideoUrlChange(e.target.value)}
-              />
-            </label>
-            <label className="admin-form-label">
-              Start Time (Minutes):
-              <input
-                type="number"
-                step="0.1"
-                value={(startTime / 60).toFixed(1)} // Convert seconds to minutes
-                placeholder="Start time in minutes"
-                className="admin-form-input"
-                onChange={(e) => setStartTime(parseFloat(e.target.value) * 60)}
-              />
-            </label>
-            <label className="admin-form-label">
-              End Time (Minutes):
-              <input
-                type="number"
-                step="0.1"
-                value={(endTime / 60).toFixed(1)} // Convert seconds to minutes
-                placeholder="End time in minutes"
-                className="admin-form-input"
-                onChange={(e) => setEndTime(parseFloat(e.target.value) * 60)}
-              />
-            </label>
-          </div>
-
-          {/* Video Player */}
-          <div className="admin-video-card">
-            <YouTube
-              videoId={videoId}
-              opts={opts}
-              onReady={(event: YouTubeEvent) => (playerRef.current = event.target)}
+    <div className="youtube-admin-container">
+      <h1 className="title">YouTube Video Admin</h1>
+      <div className="card">
+        {/* Input Form */}
+        <div className="input-form">
+          <label>
+            Video URL:
+            <input
+              type="text"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="Enter YouTube video URL"
             />
-          </div>
+          </label>
+          <label>
+            Start Time (Minutes):
+            <input
+              type="number"
+              value={(startTime / 60).toFixed(1)}
+              step="0.1"
+              onChange={(e) => setStartTime(parseFloat(e.target.value) * 60)}
+            />
+          </label>
+          <label>
+            End Time (Minutes):
+            <input
+              type="number"
+              value={(endTime / 60).toFixed(1)}
+              step="0.1"
+              onChange={(e) => setEndTime(parseFloat(e.target.value) * 60)}
+            />
+          </label>
+          <button className="set-btn" onClick={handleSet}>
+            Set
+          </button>
+        </div>
 
-          {/* Progress Bar */}
-          <div className="admin-progress">
-            <div
-              className="admin-progress-bar"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
-            ></div>
-          </div>
+        {/* YouTube Player */}
+        <div className="video-container">
+          <YouTube
+            videoId={videoId}
+            onReady={(event: YouTubeEvent) => (playerRef.current = event.target)}
+            opts={{ playerVars: { autoplay: 0 } }}
+          />
+        </div>
 
-          {/* Current Status */}
-          <StatusBadge action={action} />
+        {/* Controls */}
+        <div className="controls">
+          <button className="play-btn" onClick={handlePlay}>
+            Play
+          </button>
+          <button className="pause-btn" onClick={handlePause}>
+            Pause
+          </button>
+        </div>
 
-          {/* Controls */}
-          <div className="admin-controls">
-            <button
-              className={`admin-button ${action === "playRange" ? "pause" : "play"}`}
-              onClick={handlePlayPause}
-              aria-label={action === "playRange" ? "Pause Video" : "Play Video"}
-            >
-              {action === "playRange" ? "Pause" : "Play"}
-            </button>
-          </div>
-        </>
-      )}
+        {/* Status */}
+        <div className={`status-badge ${currentAction}`}>
+          {currentAction === "play" ? "Playing" : "Paused"}
+        </div>
+      </div>
     </div>
   );
-};
-
-const StatusBadge = ({ action }: { action: string }) => {
-  const badgeStyles =
-    action === "playRange" ? "badge badge-play" : action === "pause" ? "badge badge-pause" : "badge";
-  return <div className={badgeStyles}>{action === "playRange" ? "Playing Range" : "Paused"}</div>;
 };
 
 export default YoutubeAdmin;

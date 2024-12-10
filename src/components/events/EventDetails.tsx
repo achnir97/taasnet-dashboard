@@ -19,53 +19,69 @@ import { useNavigate, useParams } from "react-router-dom";
 const db = getFirestore();
 const auth = getAuth();
 
+interface EventData {
+  title: string;
+  description: string;
+  category: string;
+  eventType: string;
+  price: number;
+  eventDate: any;
+  eventTime: string;
+  videoUrl: string;
+  userId: string;
+}
+
 const EventDetails: React.FC = () => {
   const { eventId } = useParams();
-  const [event, setEvent] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [inputTitle, setInputTitle] = useState("");
+  const [event, setEvent] = useState<EventData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [inputTitle, setInputTitle] = useState<string>("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  // Fetch event details
   useEffect(() => {
     const fetchEvent = async () => {
-      setLoading(true);
-      const eventRef = doc(db, "events", eventId as string);
-      const eventSnapshot = await getDoc(eventRef);
+      try {
+        setLoading(true);
+        const eventRef = doc(db, "events", eventId as string);
+        const eventSnapshot = await getDoc(eventRef);
 
-      if (eventSnapshot.exists()) {
-        setEvent(eventSnapshot.data());
-      } else {
-        alert("Event not found!");
-        navigate("/events-list");
+        if (eventSnapshot.exists()) {
+          setEvent(eventSnapshot.data() as EventData);
+        } else {
+          alert("Event not found!");
+          navigate("/events-list");
+        }
+      } catch (error) {
+        console.error("Error fetching event:", error);
+        alert("Failed to load event details.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchEvent();
   }, [eventId, navigate]);
 
-  const handleOpenDeleteDialog = () => {
-    setDeleteDialogOpen(true);
-    setInputTitle("");
-    setDeleteError(null);
+  // Utility to extract YouTube video ID
+  const extractYouTubeId = (url: string): string | null => {
+    const regExp =
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+    const match = url.match(regExp);
+    return match ? match[1] : null;
   };
 
-  const handleCloseDeleteDialog = () => {
-    setDeleteDialogOpen(false);
-    setInputTitle("");
-    setDeleteError(null);
-  };
-
+  // Event delete confirmation
   const handleDelete = async () => {
-    if (inputTitle.trim() !== event.title) {
+    if (inputTitle.trim() !== event?.title) {
       setDeleteError("Event title does not match. Please enter the correct title.");
       return;
     }
 
     const user = auth.currentUser;
-    if (user?.uid !== event.userId) {
+    if (user?.uid !== event?.userId) {
       setDeleteError("You are not authorized to delete this event.");
       return;
     }
@@ -80,87 +96,94 @@ const EventDetails: React.FC = () => {
     }
   };
 
-  const extractYouTubeId = (url: string): string => {
-    const regExp =
-      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-    const match = url.match(regExp);
-    return match ? match[1] : "";
-  };
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" mt={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-  return loading ? (
-    <Box display="flex" justifyContent="center" mt={4}>
-      <CircularProgress />
-    </Box>
-  ) : (
+  if (!event) {
+    return (
+      <Box textAlign="center" mt={4}>
+        <Typography variant="h5" color="error">
+          Event not found!
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
     <Paper
-      elevation={3}
+      elevation={4}
       sx={{
         padding: 4,
-        maxWidth: 900,
+        maxWidth: 800,
         margin: "30px auto",
-        borderRadius: "16px",
-        backgroundColor: "#FDFDFD",
-        boxShadow: "0 10px 20px rgba(0, 0, 0, 0.15)",
+        borderRadius: "12px",
+        backgroundColor: "#ffffff",
       }}
     >
       {/* Event Title */}
       <Typography
         variant="h4"
-        fontWeight={700}
+        fontWeight="bold"
         textAlign="center"
         mb={3}
-        sx={{ color: "#333" }}
+        color="primary"
       >
         {event.title}
       </Typography>
 
       {/* Embedded Video */}
-      <Box
-        mb={4}
-        sx={{
-          position: "relative",
-          paddingTop: "56.25%", // Responsive 16:9 Aspect Ratio
-          borderRadius: "8px",
-          overflow: "hidden",
-          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-        }}
-      >
-        <iframe
-          src={`https://www.youtube.com/embed/${extractYouTubeId(event.videoUrl)}`}
-          title="Event Video"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            border: "none",
+      {event.videoUrl && (
+        <Box
+          mb={4}
+          sx={{
+            position: "relative",
+            paddingTop: "56.25%", // Responsive 16:9 Aspect Ratio
+            borderRadius: "8px",
+            overflow: "hidden",
+            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
           }}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        ></iframe>
-      </Box>
+        >
+          <iframe
+            src={`https://www.youtube.com/embed/${extractYouTubeId(event.videoUrl)}`}
+            title="Event Video"
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              border: "none",
+            }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          ></iframe>
+        </Box>
+      )}
 
-      {/* Event Description */}
-      <Typography variant="body1" paragraph>
-        <strong>Description:</strong> {event.description}
-      </Typography>
-
-      <Box mb={2}>
-        <Typography variant="body2" color="text.secondary">
+      {/* Event Details */}
+      <Box mb={3}>
+        <Typography>
+          <strong>Description:</strong> {event.description}
+        </Typography>
+        <Typography>
           <strong>Category:</strong> {event.category}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          <strong>Event Type:</strong> {event.eventType}
+        <Typography>
+          <strong>Card Type:</strong> {event.eventType}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography>
           <strong>Price:</strong> ${event.price}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography>
           <strong>Date:</strong>{" "}
-          {new Date(event.eventDate.toDate()).toDateString()}
+          {event.eventDate?.toDate ? new Date(event.eventDate.toDate()).toDateString() : "N/A"}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography>
           <strong>Time:</strong> {event.eventTime}
         </Typography>
       </Box>
@@ -170,38 +193,33 @@ const EventDetails: React.FC = () => {
         <Button
           variant="contained"
           color="primary"
-          sx={{ textTransform: "none", borderRadius: "8px", padding: "10px 20px" }}
+          sx={{ borderRadius: "8px", padding: "10px 24px" }}
           onClick={() => navigate(`/create-event?eventId=${eventId}`)}
         >
-          Edit Event
+          Edit Card
         </Button>
         <Button
           variant="contained"
           color="error"
-          sx={{
-            textTransform: "none",
-            borderRadius: "8px",
-            padding: "10px 20px",
-          }}
-          onClick={handleOpenDeleteDialog}
+          sx={{ borderRadius: "8px", padding: "10px 24px" }}
+          onClick={() => setDeleteDialogOpen(true)}
         >
-          Delete Event
+          Delete Card
         </Button>
       </Box>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
-        <DialogTitle sx={{ fontWeight: 700 }}>Confirm Event Deletion</DialogTitle>
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Confirm Card Deletion</DialogTitle>
         <DialogContent>
-          <Typography>
-            Please type the title <strong>{event.title}</strong> to confirm deletion.
+          <Typography mb={2}>
+            Type <strong>{event.title}</strong> to confirm deletion.
           </Typography>
           <TextField
             autoFocus
             margin="dense"
             label="Event Title"
             fullWidth
-            variant="outlined"
             value={inputTitle}
             onChange={(e) => setInputTitle(e.target.value)}
             error={Boolean(deleteError)}
@@ -209,10 +227,10 @@ const EventDetails: React.FC = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDeleteDialog} color="primary">
+          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
             Cancel
           </Button>
-          <Button onClick={handleDelete} color="error">
+          <Button onClick={handleDelete} color="error" variant="contained">
             Confirm Delete
           </Button>
         </DialogActions>

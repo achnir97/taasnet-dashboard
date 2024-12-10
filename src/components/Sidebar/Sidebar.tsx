@@ -11,7 +11,7 @@ const Sidebar: React.FC = () => {
         <li><Link to="/profile-management">Profile Management</Link></li>
         <li><Link to="/events-list">Services</Link></li>
         <li><Link to="/bookings">Requests</Link></li>
-        <li><Link to="/create-event">Create Event</Link></li>
+        <li><Link to="/create-event">Create Cards</Link></li>
         <li><Link to="/service-platform">Service Platform</Link></li>
         <li><Link to="/broadcast">LiveStream Broadcast</Link></li>
       </ul>

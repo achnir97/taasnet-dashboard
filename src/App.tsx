@@ -15,12 +15,19 @@ import ProtectedRoute from "./components/Authentication/ProtectedRoute";
 import UserEventsList from "./components/events/ListofEvents";
 import EventDetails from "./components/events/EventDetails";
 import AcceptedBookingsPage from "./components/events/AcceptedBooking";
-
+import { VideoCall } from "@mui/icons-material";
+import VideoCallPage from "./components/events/VideoCall";
+import { useLocation } from "react-router-dom";
 const App: React.FC = () => {
   useEffect(() => {
     console.log("Firebase App Instance:", firebaseApp);
   }, []);
-
+  const VideoCallRoute: React.FC = () => {
+    const location = useLocation();
+    const title = location.state?.title || "Video Call";
+  
+    return <VideoCallPage title={title} />;
+  };
   return (
     <GlobalProvider>
       <div className="grid-container">
@@ -84,6 +91,7 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            <Route path="/video-call" element={ <ProtectedRoute> <VideoCallRoute /></ProtectedRoute>} />
             <Route
               path="/event-details/:eventId"
               element={

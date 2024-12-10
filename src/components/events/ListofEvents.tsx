@@ -95,7 +95,7 @@ const UserEventsList: React.FC = () => {
       }}
     >
       <Typography variant="h4" fontWeight={700} textAlign="center" mb={3}>
-        My Events
+        My Cards
       </Typography>
 
       {loading ? (
