@@ -1,51 +1,97 @@
 import React, { useRef, useState, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import "./youtubeAdmin.css";
-
-const db = getFirestore();
 
 const YoutubeAdmin: React.FC = () => {
   const [videoId, setVideoId] = useState<string>("dQw4w9WgXcQ"); // Default video ID
   const [videoUrl, setVideoUrl] = useState<string>("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
-  const [startTime, setStartTime] = useState<number>(0); // Start in seconds
-  const [endTime, setEndTime] = useState<number>(0); // End in seconds
+  const [startTime, setStartTime] = useState<number>(0); // Start time in seconds
+  const [endTime, setEndTime] = useState<number>(0); // End time in seconds
   const [pausedTime, setPausedTime] = useState<number>(0); // Last paused time
   const [currentAction, setCurrentAction] = useState<string>("pause"); // Default action
   const playerRef = useRef<any>(null);
 
+  const saveApiUrl   = "http://222.112.183.197:8086/api/save-video-control"; // Save endpoint
+  const updateApiUrl = "http://222.112.183.197:8086/api/update-video-control"; // Update endpoint
+  const fetchApiUrl  = "http://222.112.183.197:8086/api/get-video-control"; // Fetch endpoint
+
+  // On component load, fetch current video settings
   useEffect(() => {
     fetchCurrentSettings();
   }, []);
-
-  // Fetch video settings from Firestore
+    
+  // Fetch current video settings from the backend
   const fetchCurrentSettings = async () => {
     try {
-      const docRef = doc(db, "adminControls", "videoControl");
-      const docSnapshot = await getDoc(docRef);
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
-        setVideoId(data.videoId || "dQw4w9WgXcQ");
-        setVideoUrl(`https://www.youtube.com/watch?v=${data.videoId}`);
-        setStartTime(data.startTime || 0);
-        setEndTime(data.endTime || 0);
-        setPausedTime(data.lastPausedTime || 0);
-        setCurrentAction("pause");
+      const response = await fetch(fetchApiUrl);
+      if (response.ok) {
+        const data = await response.json();
+        const videoControl = data.video_control;
+        if (videoControl) {
+          setVideoId(extractVideoId(videoControl.video_url) || "dQw4w9WgXcQ");
+          setVideoUrl(videoControl.video_url || "");
+          setStartTime(videoControl.start_time || 0);
+          setEndTime(videoControl.end_time || 0);
+          setPausedTime(videoControl.paused_time || 0);
+          setCurrentAction(videoControl.action || "pause");
+        }
+      } else {
+        console.error("Error fetching video settings:", response.statusText);
       }
     } catch (error) {
       console.error("Error fetching video settings:", error);
     }
   };
 
-  // Update video settings in Firestore
-  const updateSettings = async (newSettings: Partial<{ videoId: string; startTime: number; endTime: number; lastPausedTime: number }>) => {
+  // Save new video settings to the backend
+  const saveSettings = async () => {
     try {
-      const docRef = doc(db, "adminControls", "videoControl");
-      await setDoc(docRef, newSettings, { merge: true });
+      const response = await fetch(saveApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          video_url: videoUrl,
+          start_time: startTime,
+          end_time: endTime,
+          paused_time: startTime,
+          action: "pause",
+        }),
+      });
+      if (!response.ok) {
+        console.error("Error saving video settings:", response.statusText);
+      }
     } catch (error) {
-      console.error("Error updating Firebase:", error);
+      console.error("Error saving video settings:", error);
     }
   };
+
+  const updateSettings = async (newSettings: Partial<{ paused_time: number; action: string }>) => {
+    try {
+      const payload = {
+        paused_time: Math.floor(newSettings.paused_time || 0 ), // Truncate to integer
+        action: newSettings.action,
+      };
+  
+      console.log("Payload being sent:", payload); // Debugging step
+  
+      const response = await fetch(updateApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+  
+      if (!response.ok) {
+        console.error("Error updating video settings:", response.statusText);
+        const errorBody = await response.text();
+        console.error("Response body:", errorBody);
+      } else {
+        console.log("Video settings updated successfully.");
+      }
+    } catch (error) {
+      console.error("Error updating video settings:", error);
+    }
+  };
+  
 
   // Extract video ID from YouTube URL
   const extractVideoId = (url: string): string => {
@@ -53,49 +99,76 @@ const YoutubeAdmin: React.FC = () => {
     return match ? match[1] : "";
   };
 
-  // Handle Set Button Click
-  const handleSet = () => {
-    const extractedId = extractVideoId(videoUrl);
-    if (extractedId) {
-      setVideoId(extractedId);
-      updateSettings({ videoId: extractedId, startTime, endTime, lastPausedTime: startTime });
-      setCurrentAction("pause");
-      playerRef.current?.pauseVideo();
-    } else {
-      alert("Invalid YouTube URL. Please enter a valid URL.");
-    }
-  };
+  // Handle "Set" button click
+// Handle "Set" button click
+const handleSet = async () => {
+  const extractedId = extractVideoId(videoUrl);
+  if (extractedId) {
+    setVideoId(extractedId); // Update video ID locally
 
-  // Play Video
+    try {
+      // Save settings to the backend
+      const response = await fetch(saveApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          video_url: videoUrl,
+          start_time: startTime,
+          end_time: endTime,
+          paused_time: startTime,
+          action: "pause",
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Settings saved successfully.");
+        await fetchCurrentSettings(); // Re-fetch settings immediately after saving
+        playerRef.current?.loadVideoById(extractedId, startTime); // Update player to new video and start time
+        playerRef.current?.pauseVideo(); // Set to pause after loading
+        setCurrentAction("pause");
+      } else {
+        console.error("Error saving video settings:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error saving video settings:", error);
+    }
+  } else {
+    alert("Invalid YouTube URL. Please enter a valid URL.");
+  }
+};
+
+
+  // Handle "Play" button click
   const handlePlay = () => {
     if (playerRef.current) {
       const resumeTime = pausedTime > 0 ? pausedTime : startTime;
-      playerRef.current.seekTo(resumeTime); // Start from paused time or start time
+      playerRef.current.seekTo(resumeTime);
       playerRef.current.playVideo();
       setCurrentAction("play");
+      updateSettings({ paused_time: resumeTime, action: "play" });
 
       // Monitor to pause at the end time
       const monitorPlayback = setInterval(() => {
         const currentTime = playerRef.current.getCurrentTime();
         if (currentTime >= endTime && endTime > 0) {
           playerRef.current.pauseVideo();
-          setPausedTime(endTime); // Update paused time as end time
+          setPausedTime(endTime);
           setCurrentAction("pause");
-          updateSettings({ lastPausedTime: endTime });
+          updateSettings({ paused_time: endTime, action: "pause" });
           clearInterval(monitorPlayback);
         }
       }, 500);
     }
   };
 
-  // Pause Video
+  // Handle "Pause" button click
   const handlePause = () => {
     if (playerRef.current) {
       const currentPausedTime = playerRef.current.getCurrentTime();
-      setPausedTime(currentPausedTime); // Save paused position
+      setPausedTime(currentPausedTime);
       playerRef.current.pauseVideo();
       setCurrentAction("pause");
-      updateSettings({ lastPausedTime: currentPausedTime });
+      updateSettings({ paused_time: currentPausedTime, action: "pause" });
     }
   };
 
