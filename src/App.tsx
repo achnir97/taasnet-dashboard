@@ -6,7 +6,7 @@ import Sidebar from "./components/Navbar/Navbar";
 import { ProfileManagement } from "./components/Profile/ProfileManagement";
 import Footer from "./components/Footer/Footer";
 import AgoraVideo from "./components/Agora/AgoraVideo";
-import YoutubeAdmin from "./components/Youtube/Youtube";
+//import YoutubeAdmin from "./components/Youtube/Youtube";
 import AuthPage from "./components/Authentication/Loginpage";
 import { GlobalProvider } from "./components/context/GlobalContext";
 import AddEvent from "./components/events/AddEvent";

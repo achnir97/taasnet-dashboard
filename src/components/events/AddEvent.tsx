@@ -17,7 +17,7 @@ import { useGlobalContext } from "../context/GlobalContext";
 import CustomSelect from "./CustomSelect";
 import { categories, eventTypes } from "./EventConstant";
 
-const BACKEND_API_URL = "http://222.112.183.197:8086";
+const BACKEND_API_URL = process.env.REACT_APP_API_URL;
 
 const AddEvent: React.FC = () => {
   const { userId } = useGlobalContext();

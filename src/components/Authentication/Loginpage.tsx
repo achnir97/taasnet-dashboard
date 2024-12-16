@@ -12,7 +12,7 @@ import {
   useTheme,
 } from "@mui/material";
 
-const BACKEND_URL = "http://222.112.183.197:8086";
+const BACKEND_URL = process.env.REACT_APP_API_URL;
 
 const AuthPage: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState<boolean>(true);

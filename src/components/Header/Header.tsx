@@ -36,8 +36,8 @@ interface Notification {
   bookedBy: string;
 }
 
-const notificationUrl = "http://222.112.183.197:8086/api/notifications";
-const updateStatusUrl = "http://222.112.183.197:8086/api/handle-bookingStatus";
+const notificationUrl = process.env.REACT_APP_API_URL;
+const updateStatusUrl = process.env.REACT_APP_API_URL;
 
 const Header: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
