@@ -8,8 +8,6 @@
 body {
   font-family: 'Roboto', sans-serif;
   background: linear-gradient(135deg, #f7f7f7, #e0e0e0);
-  display: flex;
-  justify-content: center;
   margin: 0;
   padding: 20px;
   color: #4a4a4a;
@@ -47,7 +45,7 @@ button:hover {
     "header"
     "sidebar"
     "main-content"
-    "video-stream"
+    /* "video-stream" */
     "footer";
   max-width: 1200px;
   gap: 20px;

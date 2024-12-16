@@ -87,8 +87,21 @@ const VideoCallPage: React.FC<VideoCallPageProps> = ({ title }) => {
         </div>
       </div>
 
+      {/* Join Call Button */}
+      {!isStreaming && (
+        <div className="join-call-container">
+          <button
+            className="join-call-button"
+            onClick={handleJoinAsHost}
+            disabled={loading}
+          >
+            {loading ? <HourglassEmpty /> : "Join Call"}
+          </button>
+        </div>
+      )}
+
       {/* Control Bar */}
-      {isStreaming ? (
+      {isStreaming && (
         <div className="control-bar">
           <button className="control-button" onClick={toggleMute}>
             {isMuted ? <MicOff /> : <Mic />}
@@ -100,10 +113,6 @@ const VideoCallPage: React.FC<VideoCallPageProps> = ({ title }) => {
             <CallEnd />
           </button>
         </div>
-      ) : (
-        <button className="layout-button active" onClick={handleJoinAsHost} disabled={loading}>
-          {loading ? <HourglassEmpty /> : "Join Call"}
-        </button>
       )}
     </div>
   );

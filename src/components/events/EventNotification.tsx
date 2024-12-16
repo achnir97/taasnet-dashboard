@@ -1,181 +1,224 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  onSnapshot,
-  Unsubscribe,
-} from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import {
-  Paper,
-  Typography,
-  List,
-  ListItem,
-  Divider,
-  CircularProgress,
-  Box,
-  ListItemAvatar,
-  ListItemText,
-  Avatar,
-  Alert,
+    Box,
+    Typography,
+    List,
+    ListItemText,
+    Button,
+    Badge,
+    Paper,
+    Divider,
+    Alert,
+    Snackbar,
+    CircularProgress,
+    useTheme
 } from "@mui/material";
-import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
-import InfoIcon from "@mui/icons-material/Info";
-import ErrorIcon from "@mui/icons-material/Error";
+import { useGlobalContext } from "../context/GlobalContext";
 
-// Define the Notification type for strong typing
 interface Notification {
-  id: string;
-  message: string;
-  type: "info" | "success" | "error";
-  timestamp: Date;
+    id: string;
+    message: string;
+    eventId: string;
+    status: string;
+    bookedBy: string;
 }
 
-// Reusable Notification Item Component
-const NotificationItem: React.FC<{ notification: Notification }> = React.memo(
-  ({ notification }) => {
-    const getIcon = () => {
-      switch (notification.type) {
-        case "info":
-          return <InfoIcon color="info" />;
-        case "success":
-          return <NotificationsActiveIcon color="success" />;
-        case "error":
-          return <ErrorIcon color="error" />;
-        default:
-          return <InfoIcon />;
-      }
-    };
+const notificationUrl = "http://222.112.183.197:8086/api/notifications";
+const updateStatusUrl = "http://222.112.183.197:8086/api/handle-bookingStatus";
 
-    return (
-      <React.Fragment>
-        <ListItem>
-          <ListItemAvatar>
-            <Avatar sx={{ backgroundColor: "transparent" }}>{getIcon()}</Avatar>
-          </ListItemAvatar>
-          <ListItemText
-            primary={
-              <Typography variant="body1" fontWeight="bold">
-                {notification.message}
-              </Typography>
-            }
-            secondary={
-              <Typography variant="caption" color="text.secondary">
-                {notification.timestamp.toLocaleString()}
-              </Typography>
-            }
-          />
-        </ListItem>
-        <Divider />
-      </React.Fragment>
-    );
-  }
-);
 
 const NotificationsPage: React.FC = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [notificationCount, setNotificationCount] = useState(0);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+      const cache = useRef<Record<string, Notification[]>>({});
+    const { userId } = useGlobalContext();
+      const theme = useTheme();
 
-  const auth = getAuth();
-  const db = getFirestore();
-
-  useEffect(() => {
-    let unsubscribe: Unsubscribe | null = null;
-
-    const fetchNotifications = () => {
-      const user = auth.currentUser;
-
-      if (user) {
-        const notificationsRef = collection(db, "notifications");
-        const q = query(notificationsRef, where("userId", "==", user.uid));
-
-        unsubscribe = onSnapshot(
-          q,
-          (snapshot) => {
-            const data = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-              timestamp: doc.data().timestamp?.toDate() || new Date(),
-            })) as Notification[];
-            setNotifications(data);
-            setLoading(false);
-          },
-          (err) => {
-            console.error("Error fetching notifications:", err);
-            setError("Failed to load notifications. Please try again later.");
-            setLoading(false);
-          }
-        );
-      } else {
-        setLoading(false);
-        setError("User not authenticated.");
-      }
+        const showSnackbar = (message: string) => {
+        setApiError(message);
+        setSnackbarOpen(true);
     };
 
-    fetchNotifications();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
+    const handleApiError = (error: any) => {
+        console.error("API Error:", error);
+        showSnackbar(error.message || "An unexpected error occurred")
     };
-  }, [auth, db]);
 
-  return (
-    <Paper
-      elevation={3}
-      sx={{
-        padding: 3,
-        maxWidth: 800,
-        margin: "auto",
-        marginTop: 4,
-        borderRadius: "12px",
-        boxShadow: "0 4px 10px rgba(0, 0, 0, 0.15)",
-        backgroundColor: "#FDFDFD",
-      }}
-    >
-      {/* Page Title */}
-      <Typography
-        variant="h4"
-        fontWeight="bold"
-        textAlign="center"
-        gutterBottom
-        color="primary"
-      >
-        Notifications
-      </Typography>
-      <Divider sx={{ mb: 2 }} />
+    useEffect(() => {
+         let isMounted = true;
+        if (!userId) return;
+        const eventSource = new EventSource(`${notificationUrl}?user_id=${userId}`);
 
-      {/* Loading State */}
-      {loading && (
-        <Box display="flex" justifyContent="center" alignItems="center" height="100px">
-          <CircularProgress color="primary" />
-        </Box>
-      )}
+        eventSource.onmessage = (event) => {
+             if(isMounted) {
+            const newNotification = JSON.parse(event.data) as Notification;
+            setNotifications((prev) => {
+                  if (cache.current[userId]) {
+                   cache.current[userId] = [...prev, newNotification]
+                  }
+                const alreadyExists = prev.find((n) => n.id === newNotification.id);
+                  if (!alreadyExists) {
+                    setNotificationCount((prevCount) => prevCount + 1);
+                    return [...prev, newNotification];
+                }
+                return prev
+            });
+             }
+        };
 
-      {/* Error State */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
 
-      {/* No Notifications */}
-      {!loading && !error && notifications.length === 0 && (
-        <Typography variant="body1" textAlign="center" color="text.secondary">
-          No notifications available.
-        </Typography>
-      )}
+        eventSource.onerror = (err) => {
+            console.error("Error with SSE connection:", err);
+            setError("Error fetching real-time notifications.");
+             showSnackbar(`Error with SSE connection: ${err}`)
+            eventSource.close();
+        };
 
-      {/* Notifications List */}
-      <List>
-        {notifications.map((notification) => (
-          <NotificationItem key={notification.id} notification={notification} />
-        ))}
-      </List>
-    </Paper>
-  );
+        return () => {
+             isMounted = false;
+            eventSource.close();
+        };
+    }, [userId, showSnackbar]);
+
+
+    const updateBookingStatus = useCallback(async (bookingId: string, newStatus: string) => {
+            setLoading(true)
+        try {
+            const response = await fetch(
+                `${updateStatusUrl}?user_id=${userId}&bookingId=${bookingId}`,
+                {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status: newStatus }),
+                }
+            );
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to update booking status: ${response.status} ${response.statusText}`);
+             }
+
+
+                setNotifications((prev) => {
+                    if(userId) {
+                       if (cache.current[userId]) {
+                         cache.current[userId] =  prev.filter((notification) => notification.id !== bookingId)
+                     }
+                }
+                    return prev.filter((notification) => notification.id !== bookingId)
+            }
+             );
+            setNotificationCount((prev) => prev - 1);
+              showSnackbar("Booking status updated");
+        } catch (err: any) {
+             handleApiError(err)
+        } finally {
+            setLoading(false);
+        }
+    },[userId, showSnackbar, handleApiError])
+
+
+
+    return (
+        <Paper
+            elevation={3}
+            sx={{
+                padding: 4,
+                margin: "40px auto",
+                maxWidth: 800,
+                borderRadius: "12px",
+                backgroundColor: theme.palette.background.paper,
+            }}
+        >
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                <Typography variant="h5" fontWeight="bold" color="primary">
+                    Notifications
+                </Typography>
+                <Badge badgeContent={notificationCount} color="error">
+                    <Typography>Pending</Typography>
+                </Badge>
+            </Box>
+            <Divider sx={{ mb: 2 }} />
+
+            {/* Error State */}
+            {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    {error}
+                </Alert>
+            )}
+
+            {/* No Notifications */}
+            {notifications.length === 0 && (
+                <Typography textAlign="center" color="text.secondary">
+                    No pending booking requests at the moment.
+                </Typography>
+            )}
+
+            {/* Notifications List */}
+            <List>
+                {notifications.map((notification) => (
+                    <Box
+                        key={notification.id}
+                        sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            mb: 2,
+                            padding: 2,
+                            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                            borderRadius: "8px",
+                             backgroundColor: theme.palette.background.default,
+                        }}
+                    >
+                        <ListItemText
+                            primary={<Typography fontWeight="bold">{notification.message}</Typography>}
+                            secondary={
+                                <Typography color="text.secondary">
+                                    Booked By: {notification.bookedBy} | Event ID: {notification.eventId}
+                                </Typography>
+                            }
+                        />
+                        <Box>
+                            <Button
+                                variant="contained"
+                                color="success"
+                                onClick={() => updateBookingStatus(notification.id, "Accepted")}
+                                sx={{ mr: 1 }}
+                                disabled={loading}
+                            >
+                                Accept
+                            </Button>
+                            <Button
+                                variant="contained"
+                                color="error"
+                                onClick={() => updateBookingStatus(notification.id, "Declined")}
+                                disabled={loading}
+                            >
+                                Decline
+                            </Button>
+                        </Box>
+                    </Box>
+                ))}
+            </List>
+             {loading && <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                    <CircularProgress />
+                </Box>}
+             <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={6000}
+                onClose={() => setSnackbarOpen(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setSnackbarOpen(false)} severity="error" sx={{ width: '100%' }}>
+                    {apiError}
+                </Alert>
+            </Snackbar>
+        </Paper>
+    );
 };
 
 export default NotificationsPage;

@@ -13,23 +13,14 @@ import AddAPhotoIcon from "@mui/icons-material/AddAPhoto";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import {
-  getFirestore,
-  addDoc,
-  collection,
-  Timestamp,
-} from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { useGlobalContext } from "../context/GlobalContext"; // Import Global Context
+import { useGlobalContext } from "../context/GlobalContext";
 import CustomSelect from "./CustomSelect";
 import { categories, eventTypes } from "./EventConstant";
 
-// Firebase Initialization
-const db = getFirestore();
-const storage = getStorage();
+const BACKEND_API_URL = "http://222.112.183.197:8086";
 
 const AddEvent: React.FC = () => {
-  const { userId } = useGlobalContext(); // Access userId from GlobalContext
+  const { userId } = useGlobalContext();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -37,22 +28,12 @@ const AddEvent: React.FC = () => {
   const [price, setPrice] = useState<number | "">("");
   const [eventDate, setEventDate] = useState<Date | null>(null);
   const [eventTime, setEventTime] = useState<Date | null>(null);
-  const [participants, setParticipants] = useState<number | "">("");
   const [videoUrl, setVideoUrl] = useState("");
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const [availableTimeInput, setAvailableTimeInput] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [showSnackbar, setShowSnackbar] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
-
-  const handleAddAvailableTime = () => {
-    if (availableTimeInput.trim()) {
-      setAvailableTimes([...availableTimes, availableTimeInput.trim()]);
-      setAvailableTimeInput("");
-    }
-  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -62,17 +43,7 @@ const AddEvent: React.FC = () => {
   };
 
   const validateFields = () => {
-    return (
-      title &&
-      description &&
-      category &&
-      eventType &&
-      price &&
-      eventDate &&
-      eventTime &&
-      videoUrl
-      //image
-    );
+    return title && description && category && eventType && price && eventDate && eventTime && videoUrl;
   };
 
   const handleReview = () => {
@@ -83,45 +54,33 @@ const AddEvent: React.FC = () => {
     setIsReviewing(true);
   };
 
-  const handleEdit = () => {
-    setIsReviewing(false);
-  };
-
   const handleSubmit = async () => {
     if (!validateFields()) {
       showSnackbarMessage("Please fill all required fields.");
       return;
     }
 
-    if (!userId) {
-      showSnackbarMessage("User not authenticated. Please log in.");
-      console.log(userId);
-      return;
-    }
-
     try {
-     // const imageRef = ref(storage, `events/${Date.now()}_${image?.name}`);
-     // await uploadBytes(imageRef, image as File);
-     //const imageUrl = await getDownloadURL(imageRef);
-
-      const eventId = `${userId}_${Date.now()}`;
       const eventData = {
-        eventId,
         userId,
         title,
         description,
         category,
         eventType,
         price,
-        eventDate: Timestamp.fromDate(eventDate as Date),
-        eventTime: eventTime?.toLocaleTimeString(),
-        participants,
+        eventDate: eventDate?.toISOString(),
+        eventTime: eventTime?.toISOString(),
         videoUrl,
-        availableTimes,
-        createdAt: Timestamp.now(),
       };
 
-      await addDoc(collection(db, "events"), eventData);
+      const response = await fetch(`${BACKEND_API_URL}/api/cards`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(eventData),
+      });
+
+      if (!response.ok) throw new Error("Failed to save event.");
+
       showSnackbarMessage("Event created successfully!");
       resetForm();
       setIsReviewing(false);
@@ -139,10 +98,7 @@ const AddEvent: React.FC = () => {
     setPrice("");
     setEventDate(null);
     setEventTime(null);
-    setParticipants("");
     setVideoUrl("");
-    setAvailableTimes([]);
-    setAvailableTimeInput("");
     setImage(null);
     setPreviewImage(null);
   };
@@ -161,121 +117,122 @@ const AddEvent: React.FC = () => {
           margin: "20px auto",
           maxWidth: 800,
           borderRadius: "12px",
-          backgroundColor: "#FAFAFA",
-          boxShadow: "0 6px 15px rgba(0, 0, 0, 0.1)",
+          backgroundColor: "#fff",
         }}
       >
+        <Typography variant="h5" fontWeight={600} textAlign="center" mb={3}>
+          {isReviewing ? "Review Card Details" : "Create New Card"}
+        </Typography>
+
         {!isReviewing ? (
-          <>
-            <Typography variant="h4" fontWeight={700} textAlign="center" mb={2}>
-              Create New Card
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  label="Event Title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  multiline
-                  rows={3}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <CustomSelect
-                  label="Category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value as string)}
-                  options={categories}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <CustomSelect
-                  label="Card Type"
-                  value={eventType}
-                  onChange={(e) => setEventType(e.target.value as string)}
-                  options={eventTypes}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Price"
-                  value={price}
-                  onChange={(e) => setPrice(Number(e.target.value))}
-                  fullWidth
-                  type="number"
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <DatePicker
-                  label=" Date"
-                  value={eventDate}
-                  onChange={(newValue) => setEventDate(newValue)}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TimePicker
-                  label=" Time"
-                  value={eventTime}
-                  onChange={(newValue) => setEventTime(newValue)}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Video URL"
-                  value={videoUrl}
-                  onChange={(e) => setVideoUrl(e.target.value)}
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Button
-                  variant="outlined"
-                  component="label"
-                  startIcon={<AddAPhotoIcon />}
-                >
-                  {previewImage ? "Change Thumbnail" : "Upload Thumbnail"}
-                  <input type="file" hidden onChange={handleImageUpload} />
-                </Button>
-                {previewImage && (
-                  <img
-                    src={previewImage}
-                    alt="Thumbnail"
-                    style={{
-                      width: "100%",
-                      maxHeight: "200px",
-                      borderRadius: "8px",
-                      marginTop: "10px",
-                    }}
-                  />
-                )}
-              </Grid>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                label="Event Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                fullWidth
+              />
             </Grid>
-            <Button
-              onClick={handleReview}
-              variant="contained"
-              fullWidth
-              sx={{ mt: 3, backgroundColor: "#000", color: "#fff" }}
-            >
-              Review Details
-            </Button>
-          </>
+
+            <Grid item xs={12}>
+              <TextField
+                label="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                multiline
+                rows={3}
+                fullWidth
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <CustomSelect
+                label="Category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as string)}
+                options={categories}
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <CustomSelect
+                label="Card Type"
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value as string)}
+                options={eventTypes}
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <TextField
+                label="Price"
+                value={price}
+                onChange={(e) => setPrice(Number(e.target.value))}
+                fullWidth
+                type="number"
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <DatePicker
+                label="Date"
+                value={eventDate}
+                onChange={(newValue) => setEventDate(newValue)}
+              />
+            </Grid>
+
+            <Grid item xs={6}>
+              <TimePicker
+                label="Time"
+                value={eventTime}
+                onChange={(newValue) => setEventTime(newValue)}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                label="Video URL"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                fullWidth
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Button variant="outlined" component="label" startIcon={<AddAPhotoIcon />}>
+                {previewImage ? "Change Thumbnail" : "Upload Thumbnail"}
+                <input type="file" hidden onChange={handleImageUpload} />
+              </Button>
+              {previewImage && (
+                <img
+                  src={previewImage}
+                  alt="Thumbnail"
+                  style={{
+                    width: "100%",
+                    maxHeight: "200px",
+                    borderRadius: "8px",
+                    marginTop: "10px",
+                  }}
+                />
+              )}
+            </Grid>
+
+            <Grid item xs={12} textAlign="center">
+              <Button
+                onClick={handleReview}
+                variant="contained"
+                sx={{ width: "200px", padding: "10px" }}
+              >
+                Review Details
+              </Button>
+            </Grid>
+          </Grid>
         ) : (
           <>
-            <Typography variant="h5" textAlign="center" mb={2}>
-              Review Your Card Details
-            </Typography>
             <Divider sx={{ mb: 2 }} />
             <Box>
-            <Typography>userId: {userId}</Typography>
+              <Typography>User ID: {userId}</Typography>
               <Typography>Title: {title}</Typography>
               <Typography>Description: {description}</Typography>
               <Typography>Category: {category}</Typography>
@@ -285,15 +242,22 @@ const AddEvent: React.FC = () => {
               <Typography>Time: {eventTime?.toLocaleTimeString()}</Typography>
               <Typography>Video URL: {videoUrl}</Typography>
             </Box>
-            <Button onClick={handleSubmit} variant="contained" fullWidth sx={{ mt: 3 }}>
-              Submit Card
-            </Button>
-            <Button onClick={handleEdit} sx={{ mt: 1 }}>
-              Edit Details
-            </Button>
+            <Grid container spacing={2} justifyContent="center" sx={{ mt: 2 }}>
+              <Grid item>
+                <Button onClick={handleSubmit} variant="contained" color="primary">
+                  Submit Card
+                </Button>
+              </Grid>
+              <Grid item>
+                <Button onClick={() => setIsReviewing(false)} color="secondary">
+                  Edit Details
+                </Button>
+              </Grid>
+            </Grid>
           </>
         )}
       </Paper>
+
       <Snackbar
         open={showSnackbar}
         message={snackbarMessage}

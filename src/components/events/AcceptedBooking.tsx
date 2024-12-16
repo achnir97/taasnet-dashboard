@@ -11,55 +11,52 @@ import {
   Avatar,
   ListItemText,
   Button,
-  Chip,
   Tooltip,
   Alert,
+  IconButton,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import EventIcon from "@mui/icons-material/Event";
 import PersonIcon from "@mui/icons-material/Person";
-import VideoCallIcon from "@mui/icons-material/VideoCall";
+import InfoIcon from "@mui/icons-material/Info";
 import SentimentDissatisfiedIcon from "@mui/icons-material/SentimentDissatisfied";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+import { useGlobalContext } from "../context/GlobalContext";
 
-const db = getFirestore();
-const auth = getAuth();
-
+// Booking Interface
 interface Booking {
   id: string;
   eventId: string;
-  bookedBy: string;
-  bookedById: string;
+  booked_by: string;
   status: string;
   title: string;
 }
+
+// Backend URL
+const backendUrl = "http://222.112.183.197:8086/api/bookingRequest";
 
 const AcceptedBookingsPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { userId } = useGlobalContext();
 
   useEffect(() => {
     const fetchAcceptedBookings = async () => {
       setLoading(true);
       setError(null);
       try {
-        const user = auth.currentUser;
-        if (!user) throw new Error("User not authenticated.");
+        if (!userId) throw new Error("User ID is missing. Please log in.");
 
-        const bookingsRef = collection(db, "bookings");
-        const q = query(bookingsRef, where("status", "==", "accepted"));
-        const querySnapshot = await getDocs(q);
+        const response = await fetch(`${backendUrl}?userId=${userId}`);
+        if (!response.ok) throw new Error("Failed to retrieve bookings.");
 
-        const acceptedBookings: Booking[] = [];
-        querySnapshot.forEach((doc) => {
-          acceptedBookings.push({ id: doc.id, ...doc.data() } as Booking);
-        });
+        const responseData = await response.json();
+        const acceptedBookings = responseData.bookings?.filter(
+          (booking: Booking) => booking.status.toLowerCase() === "accepted"
+        );
 
-        setBookings(acceptedBookings);
+        setBookings(acceptedBookings || []);
       } catch (err: any) {
         console.error("Error fetching accepted bookings:", err);
         setError(err.message || "An unexpected error occurred.");
@@ -69,32 +66,42 @@ const AcceptedBookingsPage: React.FC = () => {
     };
 
     fetchAcceptedBookings();
-  }, []);
+  }, [userId]);
 
-  const handleStartCall = (booking: Booking) => {
-    navigate("/video-call",  { state: { title: booking.title } });
+  const handleViewDetails = (booking: Booking) => {
+    navigate(`/booking-details/${booking.id}`, { state: { booking } });
   };
 
   return (
     <Paper
-      elevation={4}
-      sx={{
-        padding: 4,
-        margin: "40px auto",
-        maxWidth: 900,
-        borderRadius: "12px",
-        backgroundColor: "#ffffff",
-      }}
-    >
-      <Typography variant="h4" fontWeight={700} textAlign="center" mb={3} color="primary">
+         elevation={2}
+         sx={{
+           padding: 4,
+           margin: "20px auto",
+           maxWidth: 1200,
+           borderRadius: "12px",
+           backgroundColor: "#f8f9fa", // Neutral background
+           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+         }}
+      >
+      {/* Title */}
+      <Typography
+        variant="h5"
+        fontWeight="600"
+        textAlign="center"
+        mb={3}
+        sx={{ color: "#4c4c4c" }}
+      >
         Accepted Bookings
       </Typography>
       <Divider sx={{ mb: 3 }} />
 
+      {/* Error State */}
       {error && <Alert severity="error">{error}</Alert>}
 
+      {/* Loading State */}
       {loading ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="150px">
           <CircularProgress />
         </Box>
       ) : bookings.length === 0 ? (
@@ -102,7 +109,61 @@ const AcceptedBookingsPage: React.FC = () => {
       ) : (
         <List>
           {bookings.map((booking) => (
-            <BookingListItem key={booking.id} booking={booking} onStartCall={handleStartCall} />
+            <ListItem
+              key={booking.id}
+              sx={{
+                mb: 2,
+                borderRadius: "12px",
+                padding: 2,
+                boxShadow: "0 2px 6px rgba(0, 0, 0, 0.1)",
+                backgroundColor: "#ffffff",
+                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                "&:hover": {
+                  transform: "translateY(-3px)",
+                  boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.15)",
+                  backgroundColor: "#f3f4f6",
+                  cursor: "pointer",
+                },
+              }}
+              onClick={() => handleViewDetails(booking)}
+            >
+              <ListItemAvatar>
+                <Avatar sx={{ bgcolor: "#6c757d" }}>
+                  <EventIcon />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={
+                  <Typography variant="subtitle1" fontWeight="600" sx={{ color: "#333333" }}>
+                    {booking.title}
+                  </Typography>
+                }
+                secondary={
+                  <Box display="flex" flexWrap="wrap" alignItems="center" color="text.secondary">
+                    <PersonIcon fontSize="small" sx={{ mr: 0.5, color: "#757575" }} />
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        mr: 2,
+                        fontWeight: 500,
+                        fontSize: "0.9rem",
+                        color: "#666",
+                      }}
+                    >
+                      Booked By: {booking.booked_by}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontSize: "0.9rem", color: "#666" }}>
+                      Event ID: {booking.eventId}
+                    </Typography>
+                  </Box>
+                }
+              />
+              <Tooltip title="View Details">
+                <IconButton color="primary" sx={{ color: "#6c757d" }}>
+                  <InfoIcon />
+                </IconButton>
+              </Tooltip>
+            </ListItem>
           ))}
         </List>
       )}
@@ -110,52 +171,17 @@ const AcceptedBookingsPage: React.FC = () => {
   );
 };
 
-const BookingListItem: React.FC<{ booking: Booking; onStartCall: (booking: Booking) => void }> = ({
-  booking,
-  onStartCall,
-}) => (
-  <ListItem
-    sx={{
-      borderRadius: "8px",
-      boxShadow: "0 4px 10px rgba(0, 0, 0, 0.1)",
-      mb: 2,
-      backgroundColor: "#fdfdfd",
-    }}
-  >
-    <ListItemAvatar>
-      <Avatar sx={{ bgcolor: "primary.main" }}>
-        <EventIcon />
-      </Avatar>
-    </ListItemAvatar>
-    <ListItemText
-      primary={<Typography variant="h6">{booking.title}</Typography>}
-      secondary={
-        <>
-          <Typography variant="body2">
-            <PersonIcon fontSize="small" sx={{ mr: 0.5 }} />
-            Booked By: {booking.bookedBy}
-          </Typography>
-          <Typography variant="body2">Event ID: {booking.eventId}</Typography>
-        </>
-      }
-    />
-    <Tooltip title="Start Video Call">
-      <Button
-        variant="contained"
-        color="success"
-        startIcon={<VideoCallIcon />}
-        onClick={() => onStartCall(booking)}
-      >
-        Start Call
-      </Button>
-    </Tooltip>
-  </ListItem>
-);
-
 const EmptyState: React.FC = () => (
-  <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="300px">
-    <SentimentDissatisfiedIcon sx={{ fontSize: 80, color: "text.secondary", mb: 2 }} />
-    <Typography variant="h6" color="text.secondary">
+  <Box
+    display="flex"
+    flexDirection="column"
+    alignItems="center"
+    justifyContent="center"
+    minHeight="200px"
+    sx={{ color: "#6c757d" }}
+  >
+    <SentimentDissatisfiedIcon sx={{ fontSize: 60, color: "#9e9e9e", mb: 1 }} />
+    <Typography variant="body1" fontWeight="500">
       No accepted bookings are available at the moment.
     </Typography>
   </Box>

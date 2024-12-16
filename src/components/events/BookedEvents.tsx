@@ -80,15 +80,16 @@ const BookedEvents: React.FC = () => {
 
   return (
     <Paper
-      elevation={4}
-      sx={{
-        maxWidth: 800,
-        margin: "40px auto",
-        padding: 4,
-        borderRadius: "12px",
-        boxShadow: "0 6px 10px rgba(0, 0, 0, 0.1)",
-      }}
-    >
+         elevation={2}
+         sx={{
+           padding: 4,
+           margin: "20px auto",
+           maxWidth: 1200,
+           borderRadius: "12px",
+           backgroundColor: "#f8f9fa", // Neutral background
+           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
+         }}
+      >
       <Typography variant="h4" fontWeight="bold" textAlign="center" mb={3} color="primary">
         Booked Events
       </Typography>

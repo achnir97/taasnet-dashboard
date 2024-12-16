@@ -4,7 +4,7 @@ import './Footer.css'; // If you have a separate CSS file for styling the footer
 const Footer: React.FC = () => {
   return (
     <footer className="footer">
-      <p>&copy; 2024 Taasnet.com | All rights reserved.</p>
+      <p>&copy; 2024 TaaS.com | All rights reserved.</p>
     </footer>
   );
 };

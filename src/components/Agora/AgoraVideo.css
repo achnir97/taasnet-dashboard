@@ -1,119 +1,143 @@
-/* Container styling for the video call page */
+/* Define color and spacing variables for a consistent, neutral theme */
+:root {
+  --primary-color: #4285f4;
+  --secondary-color: #5f6368;
+  --light-gray: #f1f3f4;
+  --border-color: #dadce0;
+  --background-color: #fff;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --transition-duration: 0.3s;
+  --font-family: "Roboto", sans-serif;
+  --icon-button-size: 48px;
+  --control-button-size: 40px;
+}
+
+/* Resetting default styles for better consistency */
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background-color: var(--light-gray);
+  color: var(--secondary-color);
+  line-height: 1.6;
+}
+
+/* General container for the entire video call layout */
 .agora-video-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background-color: #f3f4f6;
-  font-family: "Poppins", sans-serif;
-  padding: 20px;
-  box-sizing: border-box;
-  overflow: hidden; /* Prevent overflow issues */
+  padding: 2rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/* Video grid container */
+/* Video grid container that will hold the local and remote video feeds */
 .video-grid {
   display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
   width: 100%;
-  max-width: 1200px; /* Restrict max width for large screens */
-  gap: 10px;
-  flex-wrap: wrap; /* Allow videos to wrap when needed */
-  margin: 20px 0;
-  justify-content: center;
+  margin: 1rem 0 2rem;
 }
 
-/* Horizontal layout */
-.video-grid.horizontal {
-  flex-direction: row;
-}
-
-/* Vertical layout */
-.video-grid.vertical {
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Video frame styling */
+/* Styles for the video container itself */
 .video-container {
-  flex: 1 1 calc(50% - 20px); /* Each video takes 50% width in horizontal mode */
-  aspect-ratio: 16 / 9; /* Maintain a 16:9 aspect ratio */
-  background-color: #000;
-  border-radius: 10px;
+  flex: 1;
+  position: relative;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  max-height: 45vh; /* Limit max height for vertical mode */
+  background-color: #000;
+  box-shadow: 0 0.25rem 0.5rem var(--shadow-color);
+  height: 400px;
+  transition: transform var(--transition-duration);
 }
 
-/* Responsive adjustments for smaller screens */
-@media (max-width: 768px) {
-  .video-container {
-    flex: 1 1 100%; /* Make videos stack on small screens */
-    max-height: 40vh;
-  }
+.video-container:hover {
+  transform: scale(1.02);
 }
 
-/* Placeholder styling */
-.placeholder {
-  color: #999;
+
+/* Placeholder container, when video is not streaming */
+.placeholder-container {
+  flex: 1;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--background-color);
+  color: var(--secondary-color);
+  border: 1px dashed var(--border-color);
+  box-shadow: 0 0.125rem 0.25rem var(--shadow-color);
+}
+
+.placeholder-container p {
+  margin: 0;
   font-size: 1rem;
+  line-height: 1.5;
+  color: #9aa0a6;
 }
 
-/* Layout switcher buttons */
-.layout-switcher {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-}
 
-.layout-button {
-  background-color: #0078d7;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.layout-button.active {
-  background-color: #005fa3;
-}
-
-.layout-button:hover {
-  background-color: #005fa3;
-}
-
-/* Control bar for buttons */
+/* Button group container for action buttons (join/leave/mute) */
+.button-group,
 .control-bar {
   display: flex;
-  gap: 15px;
-  margin-top: 15px;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Styles for general icon buttons */
+.icon-button,
+.control-button {
+  background-color: #f9f9f9;
+  color: var(--secondary-color);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition-duration);
+}
+
+/* Size variations for different buttons */
+.icon-button {
+  width: var(--icon-button-size);
+  height: var(--icon-button-size);
+  font-size: 2rem;
 }
 
 .control-button {
-  background-color: #0078d7;
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: var(--control-button-size);
+  height: var(--control-button-size);
+  font-size: 1.5rem;
 }
 
+/* Hover effect for standard icon buttons */
+.icon-button:hover,
 .control-button:hover {
-  background-color: #005fa3;
-  transform: scale(1.05);
+  background-color: #e0e0e0;
 }
 
-.control-button.leave {
-  background-color: #d9534f;
+/* Styles specific to leave button */
+.leave {
+  background-color: #ff4d4f;
+  color: white;
 }
 
-.control-button.leave:hover {
-  background-color: #c9302c;
+.leave:hover {
+  background-color: #e53935;
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+  .video-grid {
+      flex-direction: column;
+  }
+   .video-container {
+      height: 250px;
+  }
 }

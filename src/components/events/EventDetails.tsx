@@ -1,242 +1,307 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
-  Paper,
-  Typography,
-  Button,
-  Box,
-  CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
+    Paper,
+    Typography,
+    Button,
+    Box,
+    CircularProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    IconButton,
+    useTheme,
+    useMediaQuery,
+    Alert,
+    Snackbar,
 } from "@mui/material";
-import { getFirestore, doc, getDoc, deleteDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useNavigate, useParams } from "react-router-dom";
+import { useGlobalContext } from "../context/GlobalContext";
 
-// Firebase initialization
-const db = getFirestore();
-const auth = getAuth();
+
+const BACKEND_API_URL = "http://222.112.183.197:8086";
 
 interface EventData {
-  title: string;
-  description: string;
-  category: string;
-  eventType: string;
-  price: number;
-  eventDate: any;
-  eventTime: string;
-  videoUrl: string;
-  userId: string;
+    ID: string;
+    Title: string;
+    Description: string;
+    Category: string;
+    EventType: string;
+    Price: number;
+    EventDate: string;
+    EventTime: string;
+    VideoUrl: string;
+    UserID: string;
 }
 
 const EventDetails: React.FC = () => {
-  const { eventId } = useParams();
-  const [event, setEvent] = useState<EventData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [inputTitle, setInputTitle] = useState<string>("");
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const navigate = useNavigate();
+    const { eventId } = useParams();
+    const { userId } = useGlobalContext();
+    const [event, setEvent] = useState<EventData | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+    const [inputTitle, setInputTitle] = useState<string>("");
+    const [deleteError, setDeleteError] = useState<string | null>(null);
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [snackbarOpen, setSnackbarOpen] = useState(false);
+    const navigate = useNavigate();
+    const theme = useTheme();
+    const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Fetch event details
-  useEffect(() => {
-    const fetchEvent = async () => {
-      try {
-        setLoading(true);
-        const eventRef = doc(db, "events", eventId as string);
-        const eventSnapshot = await getDoc(eventRef);
-
-        if (eventSnapshot.exists()) {
-          setEvent(eventSnapshot.data() as EventData);
-        } else {
-          alert("Event not found!");
-          navigate("/events-list");
-        }
-      } catch (error) {
-        console.error("Error fetching event:", error);
-        alert("Failed to load event details.");
-      } finally {
-        setLoading(false);
-      }
+    // Error snackbar helper
+    const showSnackbar = (message: string) => {
+        setApiError(message);
+        setSnackbarOpen(true);
     };
 
-    fetchEvent();
-  }, [eventId, navigate]);
 
-  // Utility to extract YouTube video ID
-  const extractYouTubeId = (url: string): string | null => {
-    const regExp =
-      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
-    const match = url.match(regExp);
-    return match ? match[1] : null;
-  };
+    // Function to fetch event data
+    const fetchEvent = useCallback(async () => {
+        setLoading(true);
+        setApiError(null); // Reset any prior errors
+        try {
+            if (!userId || !eventId) {
+                showSnackbar("Invalid request. User ID or Event ID is missing.");
+                navigate("/events-list");
+                return;
+            }
 
-  // Event delete confirmation
-  const handleDelete = async () => {
-    if (inputTitle.trim() !== event?.title) {
-      setDeleteError("Event title does not match. Please enter the correct title.");
-      return;
+            const response = await fetch(
+                `${BACKEND_API_URL}/api/cards/event-id?user_id=${userId}&id=${eventId}`
+            );
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch event details: ${response.status} ${response.statusText}`);
+            }
+            const data = await response.json();
+            if (data.cards && Array.isArray(data.cards) && data.cards.length > 0) {
+                setEvent(data.cards[0]);
+            } else {
+                throw new Error("Event not found.");
+            }
+        } catch (error: any) {
+            console.error("Error fetching event:", error);
+            showSnackbar(`Failed to load event details. ${error.message}`);
+            navigate("/events-list");
+        } finally {
+            setLoading(false);
+        }
+    }, [eventId, userId, navigate]);
+
+    // Fetch event data on mount and when eventId or userId changes
+    useEffect(() => {
+        fetchEvent();
+    }, [eventId, userId, fetchEvent]);
+
+
+    // Function to extract YouTube video ID
+    const extractYouTubeId = (url: string): string | null => {
+        const regExp =
+            /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+        const match = url.match(regExp);
+        return match ? match[1] : null;
+    };
+
+    // Function to handle event deletion
+    const handleDelete = async () => {
+        if (inputTitle.trim() !== event?.Title) {
+            setDeleteError("Event title does not match. Please enter the correct title.");
+            return;
+        }
+
+        setDeleteError(null); // Clear previous errors
+        try {
+            const response = await fetch(
+                `${BACKEND_API_URL}/api/cards?user_id=${userId}&id=${eventId}`,
+                {
+                    method: "DELETE",
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Failed to delete the event: ${response.status} ${response.statusText}`);
+            }
+            showSnackbar("Event deleted successfully.");
+            navigate("/events-list");
+        } catch (error: any) {
+            console.error("Error deleting event:", error);
+            setDeleteError("Failed to delete the event. Please try again later.");
+            showSnackbar(`Failed to delete event. ${error.message}`);
+        }
+    };
+
+    // Loading state component
+    if (loading) {
+        return (
+            <Box display="flex" justifyContent="center" alignItems="center" height="300px">
+                <CircularProgress />
+            </Box>
+        );
     }
 
-    const user = auth.currentUser;
-    if (user?.uid !== event?.userId) {
-      setDeleteError("You are not authorized to delete this event.");
-      return;
+    // No event found component
+    if (!event) {
+        return (
+            <Box textAlign="center" mt={4}>
+                <Typography variant="h5" color="error">
+                    Event not found!
+                </Typography>
+            </Box>
+        );
     }
+    // Component to display the video
+    const VideoEmbed = () => {
+        if (!event.VideoUrl) return null;
 
-    try {
-      await deleteDoc(doc(db, "events", eventId as string));
-      alert("Event deleted successfully.");
-      navigate("/events-list");
-    } catch (error) {
-      console.error("Error deleting event:", error);
-      setDeleteError("Failed to delete the event. Please try again later.");
-    }
-  };
+        const videoId = extractYouTubeId(event.VideoUrl);
+        if (!videoId) return null;
 
-  if (loading) {
+        return (
+            <Box
+                mb={4}
+                sx={{
+                    position: "relative",
+                    paddingTop: "56.25%", // 16:9 aspect ratio
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    boxShadow: theme.shadows[3],
+                }}
+            >
+                <iframe
+                    title="Event Video"
+                    style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "8px",
+                    }}
+                    src={`https://www.youtube.com/embed/${videoId}`}
+                    allowFullScreen
+                />
+            </Box>
+        );
+    };
+
+    // Displaying the event details
     return (
-      <Box display="flex" justifyContent="center" mt={4}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (!event) {
-    return (
-      <Box textAlign="center" mt={4}>
-        <Typography variant="h5" color="error">
-          Event not found!
-        </Typography>
-      </Box>
-    );
-  }
-
-  return (
-    <Paper
-      elevation={4}
-      sx={{
-        padding: 4,
-        maxWidth: 800,
-        margin: "30px auto",
-        borderRadius: "12px",
-        backgroundColor: "#ffffff",
-      }}
-    >
-      {/* Event Title */}
-      <Typography
-        variant="h4"
-        fontWeight="bold"
-        textAlign="center"
-        mb={3}
-        color="primary"
-      >
-        {event.title}
-      </Typography>
-
-      {/* Embedded Video */}
-      {event.videoUrl && (
-        <Box
-          mb={4}
-          sx={{
-            position: "relative",
-            paddingTop: "56.25%", // Responsive 16:9 Aspect Ratio
-            borderRadius: "8px",
-            overflow: "hidden",
-            boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-          }}
-        >
-          <iframe
-            src={`https://www.youtube.com/embed/${extractYouTubeId(event.videoUrl)}`}
-            title="Event Video"
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              border: "none",
+        <Paper
+            elevation={3}
+            sx={{
+                maxWidth: isSmallScreen ? "95%" : 800,
+                margin: "30px auto",
+                padding: theme.spacing(isSmallScreen ? 2 : 4),
+                borderRadius: "12px",
+                backgroundColor: theme.palette.background.paper,
+                boxShadow: theme.shadows[3],
             }}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          ></iframe>
-        </Box>
-      )}
-
-      {/* Event Details */}
-      <Box mb={3}>
-        <Typography>
-          <strong>Description:</strong> {event.description}
-        </Typography>
-        <Typography>
-          <strong>Category:</strong> {event.category}
-        </Typography>
-        <Typography>
-          <strong>Card Type:</strong> {event.eventType}
-        </Typography>
-        <Typography>
-          <strong>Price:</strong> ${event.price}
-        </Typography>
-        <Typography>
-          <strong>Date:</strong>{" "}
-          {event.eventDate?.toDate ? new Date(event.eventDate.toDate()).toDateString() : "N/A"}
-        </Typography>
-        <Typography>
-          <strong>Time:</strong> {event.eventTime}
-        </Typography>
-      </Box>
-
-      {/* Buttons */}
-      <Box display="flex" justifyContent="center" gap={2} mt={3}>
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{ borderRadius: "8px", padding: "10px 24px" }}
-          onClick={() => navigate(`/create-event?eventId=${eventId}`)}
         >
-          Edit Card
-        </Button>
-        <Button
-          variant="contained"
-          color="error"
-          sx={{ borderRadius: "8px", padding: "10px 24px" }}
-          onClick={() => setDeleteDialogOpen(true)}
-        >
-          Delete Card
-        </Button>
-      </Box>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Confirm Card Deletion</DialogTitle>
-        <DialogContent>
-          <Typography mb={2}>
-            Type <strong>{event.title}</strong> to confirm deletion.
-          </Typography>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Event Title"
-            fullWidth
-            value={inputTitle}
-            onChange={(e) => setInputTitle(e.target.value)}
-            error={Boolean(deleteError)}
-            helperText={deleteError}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleDelete} color="error" variant="contained">
-            Confirm Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Paper>
-  );
+            {/* Back Button */}
+            <Box display="flex" alignItems="center" mb={2}>
+                <IconButton onClick={() => navigate(-1)} sx={{ color: theme.palette.text.secondary }}>
+                    <ArrowBackIcon fontSize="medium" />
+                </IconButton>
+                <Typography variant="subtitle1" color={theme.palette.text.secondary}>
+                    Back to Events
+                </Typography>
+            </Box>
+
+            {/* Event Title */}
+            <Typography variant="h4" fontWeight="bold" textAlign="center" mb={3} color={theme.palette.text.primary}>
+                {event.Title}
+            </Typography>
+
+
+            {/* Embedded Video */}
+            <VideoEmbed />
+
+            {/* Event Details */}
+            <Box mb={4} color={theme.palette.text.secondary}>
+                <Typography><strong>Description:</strong> {event.Description}</Typography>
+                <Typography><strong>Category:</strong> {event.Category}</Typography>
+                <Typography><strong>Event Type:</strong> {event.EventType}</Typography>
+                <Typography><strong>Price:</strong> ${event.Price}</Typography>
+                <Typography><strong>Date:</strong> {new Date(event.EventDate).toLocaleDateString()}</Typography>
+                <Typography><strong>Time:</strong> {event.EventTime}</Typography>
+            </Box>
+
+            {/* Actions */}
+            <Box display="flex" justifyContent="center" gap={2}>
+                <Button
+                    variant="contained"
+                    sx={{
+                        backgroundColor: theme.palette.grey[600],
+                        color: theme.palette.common.white,
+                        "&:hover": { backgroundColor: theme.palette.grey[700] },
+                        borderRadius: "8px",
+                    }}
+                    onClick={() => navigate(`/create-event?eventId=${eventId}`)}
+                >
+                    Edit Event
+                </Button>
+                <Button
+                    variant="outlined"
+                    sx={{
+                        borderColor: theme.palette.error.main,
+                        color: theme.palette.error.main,
+                        "&:hover": { backgroundColor: theme.palette.error.light, borderColor: theme.palette.error.dark },
+                        borderRadius: "8px",
+                    }}
+                    onClick={() => setDeleteDialogOpen(true)}
+                >
+                    Delete Event
+                </Button>
+            </Box>
+
+            {/* Delete Confirmation */}
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+                <DialogTitle>Confirm Deletion</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Type <strong>{event.Title}</strong> to confirm deletion.
+                    </Typography>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        fullWidth
+                        value={inputTitle}
+                        onChange={(e) => setInputTitle(e.target.value)}
+                        error={!!deleteError}
+                        helperText={deleteError}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                    <Button
+                        color="error"
+                        variant="contained"
+                        onClick={handleDelete}
+                        sx={{ borderRadius: "8px" }}
+                    >
+                        Confirm Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Snackbar for error messages */}
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={6000}
+                onClose={() => setSnackbarOpen(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setSnackbarOpen(false)} severity="error" sx={{ width: '100%' }}>
+                    {apiError}
+                </Alert>
+            </Snackbar>
+
+
+        </Paper>
+    );
 };
 
 export default EventDetails;

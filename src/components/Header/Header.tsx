@@ -1,252 +1,237 @@
-import React, { useState, useEffect, useRef } from "react";
-import "./Header.css";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faBell,
-  faHeart,
-  faEnvelope,
-  faSearch,
-  faCog,
-  faBars,
-  faCircle,
-  faSignOutAlt,
-} from "@fortawesome/free-solid-svg-icons";
-import profileImage from "../assets/Profile_jhon.png";
-import { db } from "../Firebase/firebase";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  getDocs,
-  setDoc,
-  doc,
-  updateDoc,
-  getDoc,
-  addDoc,
-} from "firebase/firestore";
-import { getAuth, signOut, onAuthStateChanged } from "firebase/auth";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useGlobalContext } from "../context/GlobalContext";
 import BookingRequestsModal from "../events/BookingRequestModel";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  IconButton,
+  TextField,
+  InputAdornment,
+  Badge,
+  Menu,
+  MenuItem,
+  Avatar,
+  Snackbar,
+  Alert,
+  useTheme,
+  useMediaQuery,
+  
+} from "@mui/material";
+import {
+  Notifications as NotificationsIcon,
+  Search as SearchIcon,
+  ExitToApp as LogoutIcon,
+  Circle as CircleIcon,
+  Menu as MenuIcon,
+} from "@mui/icons-material";
+interface Notification {
+  id: string;
+  message: string;
+  user_id: string;
+  eventId: string;
+  status: string;
+  bookedBy: string;
+}
 
+const notificationUrl = "http://222.112.183.197:8086/api/notifications";
+const updateStatusUrl = "http://222.112.183.197:8086/api/handle-bookingStatus";
 
 const Header: React.FC = () => {
-  const [hamburgerOpen, setHamburgerOpen] = useState(false);
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState("Online");
-  const [user, setUser] = useState<any>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationCount, setNotificationCount] = useState(0);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const auth = getAuth();
+  const cache = useRef<Record<string, Notification[]>>({});
+  const { userId, setUserId } = useGlobalContext();
   const navigate = useNavigate();
 
-  // Check authentication state on load
+  const showSnackbar = (message: string) => {
+    setApiError(message);
+    setSnackbarOpen(true);
+  };
+
+
+  const handleStatusUpdate = (status: string) => {
+    console.log(`Status updated to: ${status}`);
+    setAnchorEl(null);
+  };
+  const handleLogout = () => {
+    setUserId(null);
+    cache.current = {};
+    setAnchorEl(null); // Close the menu automatically
+    navigate("/login");
+  };
+
+  // SSE Listener for notifications
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) fetchNotifications(currentUser.uid);
-    });
-    return () => unsubscribe();
-  }, []);
+    let isMounted = true;
+    if (!userId) return;
 
+    const eventSource = new EventSource(`${notificationUrl}?user_id=${userId}`);
 
-  const fetchNotifications = async (userId: string) => {
-    try {
-      const bookingsRef = collection(db, "bookings");
-      const eventsRef = collection(db, "events");
-  
-      // Fetch organized events
-      const qEvents = query(eventsRef, where("userId", "==", userId));
-      const eventSnapshot = await getDocs(qEvents);
-  
-      const organizedEventIds: string[] = [];
-      eventSnapshot.forEach((doc) => {
-        organizedEventIds.push(doc.id);
-      });
-  
-      if (organizedEventIds.length > 0) {
-        // Fetch only pending bookings
-        const qBookings = query(
-          bookingsRef,
-          where("eventId", "in", organizedEventIds),
-          where("status", "==", "pending") // Only show pending bookings
-        );
-  
-        onSnapshot(qBookings, (snapshot) => {
-          const bookings = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setNotifications(bookings);
-          setNotificationCount(bookings.length); // Update notification count
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  };
-  
-  // Update user status
-  const updateStatus = async (status: string) => {
-    if (user) {
+    eventSource.onmessage = (event) => {
+      if (!isMounted) return;
+
       try {
-        const statusRef = doc(db, "talents", user.uid);
-        await setDoc(statusRef, { status }, { merge: true });
-        setSelectedStatus(status);
-        setDropdownVisible(false);
-      } catch (error) {
-        console.error("Error updating status:", error);
-      }
-    }
-  };
+        const parsedData = JSON.parse(event.data);
+        const newNotification: Notification = {
+          id: parsedData.booking_id || parsedData.id,
+          message: parsedData.message || "New booking request",
+          user_id: parsedData.user_id || "",
+          eventId: parsedData.eventId || "",
+          status: parsedData.status || "pending",
+          bookedBy: parsedData.bookedBy || "",
+        };
 
-  const handleBookingAction = async (bookingId: string, status: string) => {
-    try {
-      const bookingRef = doc(db, "bookings", bookingId);
-  
-      // Fetch the booking document
-      const bookingSnapshot = await getDoc(bookingRef);
-      const bookingData = bookingSnapshot.data();
-  
-      if (!bookingData || !bookingData.bookedBy || !bookingData.eventId) {
-        console.error("Booking data is incomplete or missing required fields.");
-        alert("Error: Booking data is incomplete. Cannot send notification.");
-        return;
-      }
-  
-      // Update the booking status
-      await updateDoc(bookingRef, { status });
-  
-      // Send notification only if status is accepted
-      if (status === "accepted") {
-        const notificationRef = collection(db, "notifications");
-        await addDoc(notificationRef, {
-          userId: bookingData.bookedBy,
-          eventId: bookingData.eventId,
-          message: `Your booking for event "${bookingData.eventId}" has been accepted.`,
-          createdAt: new Date(),
-          read: false,
+        setNotifications((prev) => {
+          const alreadyExists = prev.find((n) => n.id === newNotification.id);
+          if (!alreadyExists) {
+            setNotificationCount((prevCount) => prevCount + 1);
+            const updated = [...prev, newNotification];
+            cache.current[userId] = updated;
+            return updated;
+          }
+          return prev;
         });
+      } catch (err) {
+        console.error("Error parsing notification data:", err);
       }
-  
-      alert(`Request has been ${status}.`);
-  
-      // Update local notifications to exclude this booking
-      setNotifications((prev) =>
-        prev.filter((booking) => booking.id !== bookingId)
-      );
-    } catch (error) {
-      console.error("Error updating booking status or sending notification:", error);
-      alert("Failed to update booking status. Please try again.");
-    }
-  };
-  
-  // Logout the user
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setUser(null);
-      navigate("/admin");
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
-  };
+    };
 
-  // Toggle functions
-  const toggleHamburger = () => setHamburgerOpen(!hamburgerOpen);
-  const toggleDropdown = () => setDropdownVisible(!dropdownVisible);
-  const toggleModal = () => setModalOpen(!modalOpen);
+    eventSource.onerror = (err) => {
+      console.error("Error with SSE connection:", err);
+      showSnackbar("Error fetching real-time notifications.");
+      eventSource.close();
+    };
+
+    return () => {
+      isMounted = false;
+      eventSource.close();
+    };
+  }, [userId]);
+
+  const updateBookingStatus = useCallback(
+    async (bookingId: string, newStatus: string) => {
+      if (!bookingId) return;
+
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `${updateStatusUrl}?user_id=${userId}&bookingId=${bookingId}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: newStatus }),
+          }
+        );
+
+        if (!response.ok) throw new Error("Failed to update booking status.");
+
+        setNotifications((prev) => {
+          const updatedNotifications = prev.filter((n) => n.id !== bookingId);
+          if (updatedNotifications.length === 0) setModalOpen(false); // Close modal if no requests
+          return updatedNotifications;
+        });
+
+        setNotificationCount((prev) => Math.max(0, prev - 1));
+        showSnackbar("Booking status updated successfully");
+      } catch (err: any) {
+        showSnackbar(err.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userId]
+  );
 
   return (
-    <header className="header">
-      {/* Logo */}
-      <div className="header-left">
-        <h1 className="logo">TaaS.com</h1>
-      </div>
-
-      {/* Search Bar */}
-      <div className="header-center">
-        <div className="search-bar-container">
-          <input
-            type="text"
+    <Box>
+      <AppBar position="static" color="default" elevation={4}>
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            TaaS.com
+          </Typography>
+          <TextField
             placeholder="Search talent or services"
-            className="search-bar"
+            variant="outlined"
+            size="small"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
           />
-          <button className="search-button">
-            <FontAwesomeIcon icon={faSearch} />
-          </button>
-        </div>
-      </div>
+          {userId && (
+            <>
+              {/* Notifications Icon */}
+              <IconButton onClick={() => setModalOpen(true)}>
+                <Badge badgeContent={notificationCount} color="error">
+                  <NotificationsIcon />
+                </Badge>
+              </IconButton>
 
-      {/* Right Icons */}
-      {user && (
-        <div className="header-right">
-          {/* Notifications */}
-          <div className="icon-badge" onClick={toggleModal}>
-            <FontAwesomeIcon
-              icon={faBell}
-              className="header-icon"
-              title="Notifications"
-            />
-            {notificationCount > 0 && (
-              <span className="badge">{notificationCount}</span>
-            )}
-          </div>
-          <FontAwesomeIcon icon={faHeart} className="header-icon" title="Likes" />
-          <FontAwesomeIcon
-            icon={faEnvelope}
-            className="header-icon"
-            title="Messages"
-          />
+              {/* Profile Avatar */}
+              <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
+                <Avatar src="/profile_jhon.png" />
+              </IconButton>
+            </>
+          )}
+        </Toolbar>
+      </AppBar>
 
-          {/* Profile Image */}
-          <div className={`profile-image-container ${selectedStatus.toLowerCase()}`}>
-            <img src={profileImage} alt="Profile" className="profile-image" />
-          </div>
+      {/* Profile Menu */}
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
 
-          {/* Settings Dropdown */}
-          <div className="dropdown" ref={dropdownRef}>
-            <FontAwesomeIcon
-              icon={faCog}
-              className="settings-icon"
-              onClick={toggleDropdown}
-              title="Settings"
-            />
-            <div className={`dropdown-content ${dropdownVisible ? "show" : ""}`}>
-              <div onClick={() => updateStatus("Online")} className="dropdown-item">
-                <FontAwesomeIcon icon={faCircle} style={{ color: "green" }} /> Online
-              </div>
-              <div onClick={() => updateStatus("Busy")} className="dropdown-item">
-                <FontAwesomeIcon icon={faCircle} style={{ color: "red" }} /> Busy
-              </div>
-              <div onClick={() => updateStatus("Offline")} className="dropdown-item">
-                <FontAwesomeIcon icon={faCircle} style={{ color: "gray" }} /> Offline
-              </div>
-              <div onClick={() => updateStatus("In a Meeting")} className="dropdown-item">
-                <FontAwesomeIcon icon={faCircle} style={{ color: "orange" }} /> In a Meeting
-              </div>
-              <hr />
-              <div onClick={handleLogout} className="dropdown-item logout-item">
-                <FontAwesomeIcon icon={faSignOutAlt} /> Logout
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <MenuItem onClick={() => handleStatusUpdate("Online")}>
+                  <CircleIcon fontSize="small" color="success" sx={{ mr: 1 }} />
+                  Online
+                </MenuItem>
+                <MenuItem onClick={() => handleStatusUpdate("Busy")}>
+                  <CircleIcon fontSize="small" color="error" sx={{ mr: 1 }} />
+                  Busy
+                </MenuItem>
+                <MenuItem onClick={() => handleStatusUpdate("Offline")}>
+                  <CircleIcon fontSize="small" color="action" sx={{ mr: 1 }} />
+                  Offline
+                </MenuItem>
+                <MenuItem onClick={() => handleStatusUpdate("In a Meeting")}>
+                  <CircleIcon fontSize="small" sx={{ color: "orange", mr: 1 }} />
+                  In a Meeting
+                </MenuItem>
+      
+            <MenuItem onClick={() => handleLogout()}>
+            <LogoutIcon fontSize="small" sx={{ mr: 1 }} />  Logout
+            </MenuItem>
+      </Menu>
 
       {/* Booking Requests Modal */}
       <BookingRequestsModal
         open={modalOpen}
-        onClose={toggleModal}
-        loading={loadingNotifications}
+        onClose={() => setModalOpen(false)}
+        loading={loading}
         notifications={notifications}
-        handleBookingAction={handleBookingAction}
+        handleBookingAction={updateBookingStatus}
       />
-    </header>
+
+      {/* Snackbar for Errors */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+      >
+        <Alert severity="error">{apiError}</Alert>
+      </Snackbar>
+    </Box>
   );
 };
 

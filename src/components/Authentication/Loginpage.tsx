@@ -1,141 +1,196 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./../Firebase/firebase";
+import { useGlobalContext } from "../context/GlobalContext";
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
-import { useGlobalContext } from "../context/GlobalContext"; // Import Global Context
-import { getFirestore, doc, setDoc } from "firebase/firestore"; // Firestore imports
-import "./AuthPage.css";
+  Box,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Switch,
+  FormControlLabel,
+  useTheme,
+} from "@mui/material";
 
-const db = getFirestore(); // Initialize Firestore
+const BACKEND_URL = "http://222.112.183.197:8086";
 
 const AuthPage: React.FC = () => {
-  const [isSignUp, setIsSignUp] = useState<boolean>(true); // Toggle between Sign-Up and Login
+  const [isSignUp, setIsSignUp] = useState<boolean>(true);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [message, setMessage] = useState<string>("");
-  const [skipLogin, setSkipLogin] = useState<boolean>(false); // Toggle skip state
-  const navigate = useNavigate(); // Navigation hook
-  const { setUserId } = useGlobalContext(); // Get the setUserId function from GlobalContext
+  const [skipLogin, setSkipLogin] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const { setUserId } = useGlobalContext();
+  const theme = useTheme();
 
-  // Function to save user email in Firestore
-  const saveUserToFirestore = async (uid: string, email: string) => {
+  const handleSignUp = async () => {
     try {
-      const userRef = doc(db, "users", uid);
-      await setDoc(userRef, {
-        email,
-        createdAt: new Date(),
+      const response = await fetch(`${BACKEND_URL}/api/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-      console.log("User data saved to Firestore:", { uid, email });
-    } catch (error) {
-      console.error("Error saving user data to Firestore:", error);
+
+      if (!response.ok) {
+        throw new Error("Sign-up failed. Please try again.");
+      }
+
+      const data = await response.json();
+      setMessage("Sign-up successful! You can now log in.");
+      setIsSignUp(false);
+      console.log("Signed-up user:", data);
+    } catch (error: any) {
+      setMessage(`Error: ${error.message}`);
+      console.error("Sign-up error:", error);
+    }
+  };
+
+  const handleLogin = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Invalid credentials. Please try again.");
+      }
+
+      const data = await response.json();
+      setMessage("Login successful!");
+      setUserId(data.userId || "test-user-id");
+      console.log("Logged-in user:", data);
+      navigate("/home");
+    } catch (error: any) {
+      setMessage(`Error: ${error.message}`);
+      console.error("Login error:", error);
     }
   };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
-    try {
-      if (isSignUp) {
-        // Sign up new user
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
 
-        // Save user email to Firestore
-        await saveUserToFirestore(user.uid, user.email || "");
-        setMessage("Sign-up successful! You can now log in.");
-        setIsSignUp(false);
-        setUserId(user.uid); // Set userId in global context
-        console.log("Signed up user ID:", user.uid);
-      } else {
-        // Login existing user
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        setMessage("Login successful!");
-        setUserId(user.uid); // Set userId in global context
-        console.log("Logged in user ID:", user.uid);
-        navigate("/home"); // Navigate to homepage on successful login
-      }
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+    if (isSignUp) {
+      await handleSignUp();
+    } else {
+      await handleLogin();
     }
   };
 
-  // Handle the toggle state for skipping login
   const handleToggle = () => {
     setSkipLogin(!skipLogin);
-    if (!skipLogin) navigate("/home"); // Navigate to homepage if toggled ON
+    if (!skipLogin) navigate("/home");
   };
 
   return (
-    <div className="auth-container">
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "background.default",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 2,
+      }}
+    >
       {!skipLogin ? (
-        <form className="auth-form" onSubmit={handleAuth}>
-          <h2>{isSignUp ? "Sign Up" : "Login"}</h2>
-          {message && <div className="auth-message">{message}</div>}
-
-          <label>
-            Email:
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-            />
-          </label>
-
-          <label>
-            Password:
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-            />
-          </label>
-
-          <button type="submit" className="auth-button">
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            maxWidth: 400,
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+          component="form"
+          onSubmit={handleAuth}
+        >
+          <Typography variant="h5" align="center" gutterBottom>
             {isSignUp ? "Sign Up" : "Login"}
-          </button>
+          </Typography>
 
-          <div className="auth-toggle">
-            <p>
-              {isSignUp
-                ? "Already have an account?"
-                : "Don't have an account?"}{" "}
-              <button
-                type="button"
-                className="toggle-button"
+          {message && (
+            <Typography variant="body2" color="error" align="center">
+              {message}
+            </Typography>
+          )}
+
+          <TextField
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            label="Email"
+            variant="outlined"
+            required
+            fullWidth
+          />
+
+          <TextField
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            label="Password"
+            variant="outlined"
+            required
+            fullWidth
+          />
+
+          <Button
+            type="submit"
+            variant="contained"
+            fullWidth
+            sx={{
+              mt: 2,
+              backgroundColor: theme.palette.grey[400],
+              color: theme.palette.getContrastText(theme.palette.grey[400]),
+              "&:hover": {
+                backgroundColor: theme.palette.grey[500],
+              },
+            }}
+          >
+            {isSignUp ? "Sign Up" : "Login"}
+          </Button>
+
+          <Box sx={{ textAlign: "center", mt: 1 }}>
+            <Typography variant="body2">
+              {isSignUp ? "Already have an account?" : "Don't have an account?"}
+              &nbsp;
+              <Button
+                variant="text"
                 onClick={() => setIsSignUp(!isSignUp)}
+                sx={{ textTransform: "none", color: "text.primary" }}
               >
                 {isSignUp ? "Login" : "Sign Up"}
-              </button>
-            </p>
-          </div>
-        </form>
+              </Button>
+            </Typography>
+          </Box>
+        </Paper>
       ) : (
-        <h2>Redirecting to Homepage...</h2>
+        <Typography variant="h6" align="center">
+          Redirecting to Homepage...
+        </Typography>
       )}
 
-      {/* Skip Login Toggle Button */}
-      <div className="skip-login-container">
-        <span>Skip Login</span>
-        <label className="toggle-switch">
-          <input
-            type="checkbox"
-            checked={skipLogin}
-            onChange={handleToggle}
-            aria-label="Toggle to skip login"
-          />
-          <span className="slider" />
-        </label>
-      </div>
-    </div>
+      <Box sx={{ mt: 3, display: "flex", alignItems: "center", gap: 1 }}>
+        <Typography variant="body2">Skip Login</Typography>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={skipLogin}
+              onChange={handleToggle}
+              aria-label="Toggle to skip login"
+            />
+          }
+          label=""
+        />
+      </Box>
+    </Box>
   );
 };
 

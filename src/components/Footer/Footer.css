@@ -1,16 +1,17 @@
 .footer {
-    background-color: #333; /* Dark background for footer */
-    color: white; /* White text for contrast */
-    text-align: center; /* Center-align the text */
+    background-color: white; /* Dark background for footer */
+    color: black; /* White text for contrast */
+    text-align: c; /* Center-align the text */
     padding: 20px 0; /* Space around the text */
     position: relative;
     width: 100%;
     bottom: 0; /* Stick footer to the bottom */
     font-size: 14px;
+
   }
   
   .footer p {
     margin: 0; /* Remove default margin from the paragraph */
-    color: #f1f1f1; /* Slightly lighter shade for the text */
+    color: black; /* Slightly lighter shade for the text */
   }
   
