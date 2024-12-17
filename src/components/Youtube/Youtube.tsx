@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
 import YouTube, { YouTubeEvent } from "react-youtube";
-import "./youtubeAdmin.css";
+ import "./youtube.css";
 
 const YoutubeAdmin: React.FC = () => {
   const [videoId, setVideoId] = useState<string>("dQw4w9WgXcQ"); // Default video ID
@@ -11,9 +11,10 @@ const YoutubeAdmin: React.FC = () => {
   const [currentAction, setCurrentAction] = useState<string>("pause"); // Default action
   const playerRef = useRef<any>(null);
 
-  const saveApiUrl   = process.env.backend_url; // Save endpoint
-  const updateApiUrl = process.env.backend_url; // Update endpoint
-  const fetchApiUrl  = process.env.backend_url; // Fetch endpoint
+  const saveApiUrl   = "http://222.112.183.197:8086/api/save-video-control"; //  Save endpoint
+  const updateApiUrl = "http://222.112.183.197:8086/api/update-video-control"; // Update endpoint
+  const fetchApiUrl  = "http://222.112.183.197:8086/api/get-video-control"; // Fetch endpoint
+
 
   // On component load, fetch current video settings
   useEffect(() => {
@@ -174,7 +175,7 @@ const handleSet = async () => {
 
   return (
     <div className="youtube-admin-container">
-      <h1 className="title">YouTube Video Admin</h1>
+      <h1 className="title">Video Curation</h1>
       <div className="card">
         {/* Input Form */}
         <div className="input-form">

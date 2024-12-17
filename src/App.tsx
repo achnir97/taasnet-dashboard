@@ -6,7 +6,6 @@ import Sidebar from "./components/Navbar/Navbar";
 import { ProfileManagement } from "./components/Profile/ProfileManagement";
 import Footer from "./components/Footer/Footer";
 import AgoraVideo from "./components/Agora/AgoraVideo";
-//import YoutubeAdmin from "./components/Youtube/Youtube";
 import AuthPage from "./components/Authentication/Loginpage";
 import { GlobalProvider } from "./components/context/GlobalContext";
 import AddEvent from "./components/events/AddEvent";
@@ -19,6 +18,8 @@ import VideoCallPage from "./components/events/VideoCall";
 import { useLocation } from "react-router-dom";
 import BookingDetailsPage from "./components/events/BookingDetailsPage";
 import Navbar from "./components/Navbar/Navbar";
+import YoutubeAdmin from "./components/youtube/youtube";
+
 const App: React.FC = () => {
 
   const VideoCallRoute: React.FC = () => {
@@ -61,14 +62,14 @@ const App: React.FC = () => {
                 </ProtectedRoute>
               }
             />
-            {/* <Route
+             <Route
               path="/service-platform"
               element={
                 <ProtectedRoute>
                    <YoutubeAdmin /> 
                 </ProtectedRoute>
               }
-            /> */}
+            /> 
             <Route
               path="/create-event"
               element={

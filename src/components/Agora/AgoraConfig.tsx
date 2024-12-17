@@ -20,7 +20,7 @@ export const fetchAgoraHostConfig = async (): Promise<AgoraConfig> => {
 
   try {
     // Replace with your backend API endpoint
-    const response = await axios.get("backend-url", {
+    const response = await axios.get("http://222.112.183.197:8080/generate_token", {
       params: {
         channelName: "taasnet", // Pass the channel name
         uid: 123456, // Pass the user ID for the host

@@ -32,7 +32,7 @@ interface Booking {
 }
 
 // Backend URL
-const backendUrl = process.env.REACT_APP_API_URL;
+const backendUrl = "http://222.112.183.197:8086/api/bookingRequest";
 
 const AcceptedBookingsPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
