@@ -11,10 +11,8 @@ const YoutubeAdmin: React.FC = () => {
   const [currentAction, setCurrentAction] = useState<string>("pause"); // Default action
   const playerRef = useRef<any>(null);
 
-  const saveApiUrl   = "http://222.112.183.197:8086/api/save-video-control"; //  Save endpoint
-  const updateApiUrl = "http://222.112.183.197:8086/api/update-video-control"; // Update endpoint
-  const fetchApiUrl  = "http://222.112.183.197:8086/api/get-video-control"; // Fetch endpoint
-
+  // Fetch endpoint
+  const backendUrl=process.env.REACT_APP_BACKEND_URL
 
   // On component load, fetch current video settings
   useEffect(() => {
@@ -24,7 +22,7 @@ const YoutubeAdmin: React.FC = () => {
   // Fetch current video settings from the backend
   const fetchCurrentSettings = async () => {
     try {
-      const response = await fetch(fetchApiUrl);
+      const response = await fetch(`${backendUrl}/api/get-video-control`);
       if (response.ok) {
         const data = await response.json();
         const videoControl = data.video_control;
@@ -47,7 +45,7 @@ const YoutubeAdmin: React.FC = () => {
   // Save new video settings to the backend
   const saveSettings = async () => {
     try {
-      const response = await fetch(saveApiUrl, {
+      const response = await fetch(`${backendUrl}/api/save-video-control`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -75,7 +73,7 @@ const YoutubeAdmin: React.FC = () => {
   
       console.log("Payload being sent:", payload); // Debugging step
   
-      const response = await fetch(updateApiUrl, {
+      const response = await fetch(`${backendUrl}/api/update-video-control`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -109,7 +107,7 @@ const handleSet = async () => {
 
     try {
       // Save settings to the backend
-      const response = await fetch(saveApiUrl, {
+      const response = await fetch(`${backendUrl}/api/save-video-control`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

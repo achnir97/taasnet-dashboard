@@ -32,7 +32,8 @@ interface Booking {
 }
 
 // Backend URL
-const backendUrl = "http://222.112.183.197:8086/api/bookingRequest";
+const backendUrl=process.env.REACT_APP_BACKEND_URL;
+
 
 const AcceptedBookingsPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -48,7 +49,7 @@ const AcceptedBookingsPage: React.FC = () => {
       try {
         if (!userId) throw new Error("User ID is missing. Please log in.");
 
-        const response = await fetch(`${backendUrl}?userId=${userId}`);
+        const response = await fetch(`${backendUrl}/api/bookingRequest?userId=${userId}`);
         if (!response.ok) throw new Error("Failed to retrieve bookings.");
 
         const responseData = await response.json();

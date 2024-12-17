@@ -18,10 +18,11 @@ import VideoCallPage from "./components/events/VideoCall";
 import { useLocation } from "react-router-dom";
 import BookingDetailsPage from "./components/events/BookingDetailsPage";
 import Navbar from "./components/Navbar/Navbar";
-import YoutubeAdmin from "./components/youtube/youtube";
+import YoutubeAdmin from "./components/Youtube/Youtube";
+
 
 const App: React.FC = () => {
-
+ 
   const VideoCallRoute: React.FC = () => {
     const location = useLocation();
     const title = location.state?.title || "Video Call";
@@ -29,11 +30,14 @@ const App: React.FC = () => {
     return <VideoCallPage title={title} />;
   };
   return (
+    
     <GlobalProvider>
     
       <div className="grid-container">
         
         <div className="main-content">
+       
+   
         <Header />
         <Navbar />
 

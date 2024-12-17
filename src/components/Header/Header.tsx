@@ -35,8 +35,7 @@ interface Notification {
   status: string;
   bookedBy: string;
 }
-const notificationUrl = "http://222.112.183.197:8086/api/notifications";
-const updateStatusUrl = "http://222.112.183.197:8086/api/handle-bookingStatus";
+const backendUrl=process.env.REACT_APP_BACKEND_URL
 
 const Header: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -73,7 +72,7 @@ const Header: React.FC = () => {
     let isMounted = true;
     if (!userId) return;
 
-    const eventSource = new EventSource(`${notificationUrl}?user_id=${userId}`);
+    const eventSource = new EventSource(`${backendUrl}/api/notifications?user_id=${userId}`);
 
     eventSource.onmessage = (event) => {
       if (!isMounted) return;
@@ -123,7 +122,7 @@ const Header: React.FC = () => {
       setLoading(true);
       try {
         const response = await fetch(
-          `${updateStatusUrl}?user_id=${userId}&bookingId=${bookingId}`,
+          `${backendUrl}/api/handle-bookingStatus?user_id=${userId}&bookingId=${bookingId}`,
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },

@@ -17,7 +17,7 @@ import { useGlobalContext } from "../context/GlobalContext";
 import CustomSelect from "./CustomSelect";
 import { categories, eventTypes } from "./EventConstant";
 
-const BACKEND_API_URL = "http://222.112.183.197:8086"
+const backendUrl=process.env.REACT_APP_BACKEND_URL;
 
 const AddEvent: React.FC = () => {
   const { userId } = useGlobalContext();
@@ -73,7 +73,7 @@ const AddEvent: React.FC = () => {
         videoUrl,
       };
 
-      const response = await fetch(`${BACKEND_API_URL}/api/cards`, {
+      const response = await fetch(`${backendUrl}/api/cards`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(eventData),

@@ -8,7 +8,7 @@ interface AgoraConfig {
 }
 
 let cachedAgoraConfig: AgoraConfig | null = null; // Global cache for the Agora configuration
-
+const token_generator=process.env.REACT_APP_TOKEN_URL
 // Fetch Agora configuration for the host
 export const fetchAgoraHostConfig = async (): Promise<AgoraConfig> => {
   if (cachedAgoraConfig) {
@@ -20,7 +20,7 @@ export const fetchAgoraHostConfig = async (): Promise<AgoraConfig> => {
 
   try {
     // Replace with your backend API endpoint
-    const response = await axios.get("http://222.112.183.197:8080/generate_token", {
+    const response = await axios.get(`${token_generator}/generate_token`, {
       params: {
         channelName: "taasnet", // Pass the channel name
         uid: 123456, // Pass the user ID for the host
